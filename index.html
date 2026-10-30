@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Casa</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#b11f4b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Piano Casa">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b11f4b'/%3E%3Cpath d='M16 4.8 2.8 15.6h3.4v11.6h19.6V15.6h3.4z' fill='%23ffffff'/%3E%3Crect x='13.2' y='19.4' width='5.6' height='7.8' rx='1.2' fill='%23b11f4b'/%3E%3C/svg%3E">
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  line-height: 1.5;
+  padding: 32px 20px 80px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+
+/* ---------- Header ---------- */
+header { margin-bottom: 22px; }
+.title-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
+.date-chip {
+  font-size: 0.78rem; font-weight: 600; color: var(--cp-text-muted);
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  padding: 3px 10px; border-radius: 999px;
+}
+.stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.stat {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 0.625rem; padding: 9px 15px; min-width: 104px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+}
+.stat-val { font-size: 1.3rem; font-weight: 650; letter-spacing: -0.02em; }
+.stat-lbl { font-size: 0.7rem; color: var(--cp-text-soft); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.bar { height: 6px; background: var(--cp-surface-soft); border-radius: 999px; overflow: hidden; margin-top: 14px; border: 1px solid var(--cp-border); }
+.bar > i { display: block; height: 100%; background: var(--cp-accent); border-radius: 999px; transition: width .3s ease; }
+
+/* ---------- Card OGGI ---------- */
+.today-card {
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-accent);
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+}
+.today-head {
+  background: var(--cp-accent-soft);
+  border-bottom: 1px solid var(--cp-border);
+  padding: 16px 20px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.today-day { font-size: 1.28rem; font-weight: 680; letter-spacing: -0.02em; }
+.today-sub { font-size: 0.86rem; color: var(--cp-text-muted); margin-top: 1px; }
+.today-min { font-size: 0.82rem; font-weight: 650; color: var(--cp-accent); white-space: nowrap; }
+
+.block { padding: 15px 20px; border-top: 1px solid var(--cp-border); }
+.block:first-of-type { border-top: none; }
+.block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.block-title { font-size: 0.93rem; font-weight: 650; display: flex; align-items: center; gap: 7px; }
+.block-note { font-size: 0.78rem; color: var(--cp-text-soft); font-weight: 500; }
+.time-badge {
+  font-size: 0.72rem; font-weight: 600; color: var(--cp-text-muted);
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border);
+  padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+}
+.tag {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+}
+.tag-mo { background: var(--cp-accent); color: var(--cp-accent-fg); }
+.tag-bi { background: var(--cp-surface-soft); color: var(--cp-text-muted); border: 1px solid var(--cp-border-strong); }
+
+ul.tasks { list-style: none; display: flex; flex-direction: column; gap: 1px; }
+label.task {
+  display: flex; align-items: flex-start; gap: 11px; cursor: pointer;
+  padding: 8px 8px; margin: 0 -8px; border-radius: 0.625rem;
+  font-size: 0.94rem; transition: background .15s ease; user-select: none;
+}
+label.task:hover { background: var(--cp-highlight); }
+label.task input { display: none; }
+.box {
+  flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px;
+  border: 1.5px solid var(--cp-border-strong); border-radius: 5px;
+  display: grid; place-items: center; transition: all .15s ease;
+}
+.box::after { content: "✓"; font-size: 11px; font-weight: 800; color: var(--cp-accent-fg); opacity: 0; transform: scale(.5); transition: all .15s ease; }
+label.task input:checked + .box { background: var(--cp-accent); border-color: var(--cp-accent); }
+label.task input:checked + .box::after { opacity: 1; transform: scale(1); }
+label.task input:checked ~ .task-text { color: var(--cp-text-soft); text-decoration: line-through; text-decoration-thickness: 1.2px; }
+.task-text { transition: color .15s ease; }
+
+.waste-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+.waste-chip {
+  font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--cp-border-strong); color: var(--cp-text);
+  background: var(--cp-surface-soft); white-space: nowrap;
+}
+.waste-chip::before { content: "●"; font-size: 0.6rem; margin-right: 5px; vertical-align: 1px; }
+.w-indifferenziata::before { color: #6b7280; }
+.w-umido::before { color: #92700f; }
+.w-carta::before { color: #2563eb; }
+.w-vetro::before { color: #0d9488; }
+.w-plastica::before { color: #eab308; }
+
+.nothing { display: flex; align-items: center; gap: 12px; color: var(--cp-text-muted); font-size: 0.9rem; }
+.nothing .ico { font-size: 1.5rem; }
+
+.all-done {
+  margin: 0; padding: 14px 20px; border-top: 1px solid var(--cp-border);
+  background: var(--cp-accent-soft); font-size: 0.92rem; font-weight: 620;
+  display: flex; align-items: center; gap: 9px;
+}
+
+/* ---------- Resto della settimana ---------- */
+details.week {
+  margin-top: 22px; background: var(--cp-surface);
+  border: 1px solid var(--cp-border); border-radius: 16px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+}
+details.week > summary {
+  list-style: none; cursor: pointer; padding: 14px 20px;
+  font-size: 0.82rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--cp-text-soft); display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+details.week > summary::-webkit-details-marker { display: none; }
+details.week > summary::after { content: "▾"; font-size: 0.8rem; transition: transform .2s ease; }
+details.week[open] > summary::after { transform: rotate(180deg); }
+.week-body { padding: 0 20px 18px; display: flex; flex-direction: column; gap: 2px; }
+
+.mini { border-top: 1px solid var(--cp-border); padding: 11px 0; display: flex; gap: 14px; align-items: flex-start; }
+.mini:first-child { border-top: none; }
+.mini.is-today { display: none; }
+.mini-day { flex: 0 0 74px; font-size: 0.86rem; font-weight: 650; }
+.mini-body { flex: 1; min-width: 0; }
+.mini-focus { font-size: 0.86rem; color: var(--cp-text); }
+.mini-list { font-size: 0.79rem; color: var(--cp-text-soft); margin-top: 2px; }
+.mini-time { flex: 0 0 auto; font-size: 0.72rem; color: var(--cp-text-soft); }
+.mini.done .mini-focus { text-decoration: line-through; color: var(--cp-text-soft); }
+
+/* ---------- Regole ---------- */
+details.rules {
+  margin-top: 14px; background: var(--cp-surface);
+  border: 1px solid var(--cp-border); border-radius: 16px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+}
+details.rules > summary {
+  list-style: none; cursor: pointer; padding: 14px 20px;
+  font-size: 0.82rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--cp-text-soft); display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+details.rules > summary::-webkit-details-marker { display: none; }
+details.rules > summary::after { content: "▾"; font-size: 0.8rem; transition: transform .2s ease; }
+details.rules[open] > summary::after { transform: rotate(180deg); }
+.rules-body { padding: 0 20px 18px; display: flex; flex-direction: column; gap: 12px; }
+.rule h3 { font-size: 0.92rem; font-weight: 620; margin-bottom: 3px; }
+.rule p { font-size: 0.85rem; color: var(--cp-text-muted); }
+
+/* ---------- Toolbar ---------- */
+.btn {
+  font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  background: var(--cp-surface); color: var(--cp-text-muted);
+  border: 1px solid var(--cp-border); border-radius: 0.625rem;
+  padding: 7px 13px; transition: all .15s ease;
+}
+.btn:hover { border-color: var(--cp-border-strong); color: var(--cp-text); }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--cp-border); font-size: 0.79rem; color: var(--cp-text-soft); }
+
+@media (max-width: 560px) {
+  body { padding: 22px 14px 60px; }
+  h1 { font-size: 1.4rem; }
+  .mini-day { flex-basis: 62px; }
+}
+
+.setup { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px; padding: 18px; margin: 12px 0; }
+.setup h2 { margin: 0 0 6px; font-size: 18px; }
+.setup p { margin: 0 0 12px; color: var(--cp-text-muted); font-size: 14px; line-height: 1.45; }
+.setup input { display: block; width: 100%; box-sizing: border-box; margin: 0 0 10px; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--cp-border); background: var(--cp-bg-elevated); color: var(--cp-text); font-size: 15px; }
+.setup .setup-msg { margin: 10px 0 0; color: var(--cp-danger); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="title-row">
+    <h1>Piano Casa</h1>
+    <span class="date-chip" id="dateChip"></span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="statToday">0/0</div><div class="stat-lbl">Oggi</div></div>
+    <div class="stat"><div class="stat-val" id="statMin">—</div><div class="stat-lbl">Restano oggi</div></div>
+    <div class="stat"><div class="stat-val" id="statWeek">0/0</div><div class="stat-lbl">Settimana</div></div>
+  </div>
+  <div class="bar"><i id="weekBar" style="width:0%"></i></div>
+</header>
+
+
+<div class="setup" id="setup" hidden>
+  <h2>Collega il piano</h2>
+  <p>Il piano e le spunte stanno nel tuo archivio privato su GitHub, come per gymlog. Inserisci lo stesso codice di accesso (token) che usi in gymlog.</p>
+  <input id="setupRepo" value="gianlucagrillo/gymlog-data" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="owner/repo">
+  <input id="setupToken" type="password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…">
+  <button class="btn" id="setupGo">Collega</button>
+  <p class="setup-msg" id="setupMsg"></p>
+</div>
+
+<div class="today-card" id="todayCard"></div>
+
+<details class="week" id="weekDetails">
+  <summary>Il resto della settimana</summary>
+  <div class="week-body" id="weekBody"></div>
+</details>
+
+<details class="rules">
+  <summary>Le regole che reggono tutto</summary>
+  <div class="rules-body">
+    <div class="rule">
+      <h3>Non appoggiare, metti via</h3>
+      <p>Il 90% del disordine è roba posata "per un attimo". Se la metti via subito, non esiste il giorno in cui devi riordinare casa.</p>
+    </div>
+    <div class="rule">
+      <h3>Il lavello resta vuoto</h3>
+      <p>I piatti si lavano appena finito di mangiare, con l'acqua ancora calda. Il costo dei piatti a mano non è lavarli: è guardarli per due giorni.</p>
+    </div>
+    <div class="rule">
+      <h3>Aspira la zona, non la casa</h3>
+      <p>Il pelo si concentra sempre negli stessi tre posti. Sei minuti mirati battono quaranta minuti completi che non farai mai.</p>
+    </div>
+    <div class="rule">
+      <h3>Finito il tempo, finita la task</h3>
+      <p>Metti un timer. Il valore sta nella frequenza, non nella profondità. Fatto male tutte le settimane batte fatto bene ogni tanto.</p>
+    </div>
+  </div>
+</details>
+
+<div class="toolbar">
+  <button class="btn" id="resetDay">Azzera oggi</button>
+  <button class="btn" id="resetWeek">Azzera settimana</button>
+</div>
+
+<footer>
+  Il blocco a fondo ruota da solo: ogni sabato tocca al successivo, ogni quattro settimane si ricomincia. La routine si azzera ogni notte, la settimana ogni lunedì.<br><span id="syncNote"></span>
+</footer>
+
+</div>
+
+<script>
+/* ============ DATI (letti da GitHub) ============ */
+
+let ROUTINE, WEEK, MONTHLY, BIWEEKLY, WASTE, BEARD;
+function parseDay(s) { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function applyPlan(p) {
+  ROUTINE = p.ROUTINE; WEEK = p.WEEK; MONTHLY = p.MONTHLY; BIWEEKLY = p.BIWEEKLY; WASTE = p.WASTE;
+  BEARD = Object.assign({}, p.BEARD, { start: parseDay(p.BEARD.start), rollerStart: parseDay(p.BEARD.rollerStart) });
+}
+
+// Domani è un giorno lavorativo? (lun–ven)
+function prepTomorrow() {
+  const t = new Date();
+  const tomorrow = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1).getDay();
+  return tomorrow >= 1 && tomorrow <= 5;
+}
+function eveningTasks() {
+  const s = ROUTINE.sera;
+  return prepTomorrow() ? [s.base[0], ...s.prep, s.base[1]] : s.base.slice();
+}
+function eveningTime() {
+  return prepTomorrow() ? ROUTINE.sera.timeWithPrep : ROUTINE.sera.timeWithoutPrep;
+}
+
+/* ============ CICLO ============ */
+
+const KEY = "pianoCasa.v9";
+const DAY_IDS = ["dom","lun","mar","mer","gio","ven","sab"];
+const CYCLE_REF = new Date(2026, 0, 5);   // lunedì di riferimento
+
+function mondayOf(d) {
+  const offset = (d.getDay() + 6) % 7;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - offset);
+}
+function weeksSinceRef() { return Math.round((mondayOf(new Date()) - CYCLE_REF) / 604800000); }
+function currentBlock() { return MONTHLY[((weeksSinceRef() % 4) + 4) % 4]; }
+function isBiweeklyWeek() { return ((weeksSinceRef() % 2) + 2) % 2 === 1; }
+
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function weekKey() {
+  const m = mondayOf(new Date());
+  return m.getFullYear() + "-" + String(m.getMonth()+1).padStart(2,"0") + "-" + String(m.getDate()).padStart(2,"0");
+}
+
+/* ============ STATO ============ */
+
+function normalize(s) {
+  s = s || {};
+  if (s.day !== todayKey()) { s.day = todayKey(); s.daily = {}; }
+  if (s.week !== weekKey()) { s.week = weekKey(); s.weekly = {}; }
+  s.daily = s.daily || {};
+  s.weekly = s.weekly || {};
+  return s;
+}
+function load() {
+  let s;
+  try { s = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { s = {}; }
+  return normalize(s);
+}
+let state = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+function get(scope, id) { return !!state[scope][id]; }
+function touch() { state.updatedAt = Date.now(); save(); render(); schedulePush(); }
+function set(scope, id, v) { state[scope][id] = v; touch(); }
+
+/* ============ COMPOSIZIONE DELLA GIORNATA ============ */
+
+// Restituisce i blocchi di oggi, già ordinati, con scope e id di ogni voce.
+function todayBlocks() {
+  const id = DAY_IDS[new Date().getDay()];
+  const day = WEEK.find(d => d.id === id);
+  const blocks = [];
+
+  blocks.push({
+    key: "mattina", title: ROUTINE.mattina.title, time: ROUTINE.mattina.time,
+    items: ROUTINE.mattina.tasks.map((t, i) => ({ scope: "daily", id: "mattina:" + i, text: t }))
+  });
+
+  const nowAm = new Date();
+  if (nowAm >= BEARD.start) {
+    const yesterday = new Date(nowAm.getFullYear(), nowAm.getMonth(), nowAm.getDate() - 1);
+    const afterRoller = DAY_IDS[yesterday.getDay()] === BEARD.rollerDay && yesterday >= new Date(BEARD.rollerStart.getFullYear(), BEARD.rollerStart.getMonth(), BEARD.rollerStart.getDate());
+    blocks.push({
+      key: "barba-am", title: "🧔 Barba", time: afterRoller ? 0 : 2,
+      items: [{ scope: "daily", id: "barba:am", text: afterRoller ? BEARD.morningSkip : BEARD.morning }]
+    });
+  }
+
+  if (day.tasks.length) {
+    blocks.push({
+      key: "day", title: "🧹 " + day.focus, time: day.time,
+      items: day.tasks.map((t, i) => ({ scope: "weekly", id: day.id + ":" + i, text: t }))
+    });
+  } else if (day.empty) {
+    blocks.push({ key: "day", title: "🧹 " + day.focus, time: 0, empty: day.empty, items: [] });
+  }
+
+  if (day.monthly) {
+    if (isBiweeklyWeek()) {
+      blocks.push({
+        key: "bi", title: "🛏️ " + BIWEEKLY.label, time: BIWEEKLY.time, tag: { cls: "tag-bi", text: "quindicinale" },
+        items: [{ scope: "weekly", id: "bi:0", text: BIWEEKLY.item }]
+      });
+    }
+    const b = currentBlock();
+    blocks.push({
+      key: "mo", title: "🔁 " + b.name, time: b.time,
+      tag: { cls: "tag-mo", text: "mensile · " + b.n + " di 4" },
+      note: "Il prossimo sabato: " + MONTHLY[b.n % 4].name.toLowerCase(),
+      items: b.tasks.map((t, i) => ({ scope: "weekly", id: "mo:" + i, text: t }))
+    });
+  }
+
+  const bins = WASTE[id];
+  if (bins) {
+    blocks.push({
+      key: "waste", title: "♻️ Raccolta", time: 2, chips: bins,
+      items: [{ scope: "weekly", id: "waste:" + id, text: "Portata fuori" }]
+    });
+  }
+
+  const now = new Date();
+  if (now >= BEARD.start) {
+    const rollerTonight = id === BEARD.rollerDay && now >= BEARD.rollerStart;
+    const texts = rollerTonight ? BEARD.roller.slice() : [BEARD.minoxidil];
+    if (day.monthly && currentBlock().n === 1) texts.push(BEARD.photo);
+    blocks.push({
+      key: "barba", title: "🧔 Barba", time: rollerTonight ? 5 : 2,
+      tag: rollerTonight ? { cls: "tag-mo", text: "settimanale" } : null,
+      items: texts.map((t, i) => ({ scope: "daily", id: "barba:" + (rollerTonight ? "r" : "m") + i, text: t }))
+    });
+  }
+
+  blocks.push({
+    key: "sera", title: ROUTINE.sera.title, time: eveningTime(),
+    note: prepTomorrow() ? null : "Domani non lavori: niente pranzo da preparare.",
+    items: eveningTasks().map((t, i) => ({ scope: "daily", id: "sera:" + i, text: t }))
+  });
+
+  return blocks;
+}
+
+/* ============ RENDER ============ */
+
+const DAY_NAMES = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+const MONTHS = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+
+function taskEl(item) {
+  const label = document.createElement("label");
+  label.className = "task";
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = get(item.scope, item.id);
+  input.dataset.id = item.id;
+  input.addEventListener("change", e => set(item.scope, item.id, e.target.checked));
+  const box = document.createElement("span");
+  box.className = "box";
+  const span = document.createElement("span");
+  span.className = "task-text";
+  span.textContent = item.text;
+  label.append(input, box, span);
+  return label;
+}
+
+function renderToday() {
+  const host = document.getElementById("todayCard");
+  host.innerHTML = "";
+  const now = new Date();
+  const dayId = DAY_IDS[now.getDay()];
+  const day = WEEK.find(d => d.id === dayId);
+  const blocks = todayBlocks();
+
+  const head = document.createElement("div");
+  head.className = "today-head";
+  const left = document.createElement("div");
+  const dn = document.createElement("div");
+  dn.className = "today-day";
+  dn.textContent = DAY_NAMES[now.getDay()];
+  const ds = document.createElement("div");
+  ds.className = "today-sub";
+  ds.textContent = day.focus;
+  left.append(dn, ds);
+  const min = document.createElement("div");
+  min.className = "today-min";
+  min.id = "todayMin";
+  head.append(left, min);
+  host.appendChild(head);
+
+  blocks.forEach(b => {
+    const sec = document.createElement("div");
+    sec.className = "block";
+
+    const bh = document.createElement("div");
+    bh.className = "block-head";
+    const t = document.createElement("div");
+    t.className = "block-title";
+    t.textContent = b.title;
+    if (b.tag) {
+      const tg = document.createElement("span");
+      tg.className = "tag " + b.tag.cls;
+      tg.textContent = b.tag.text;
+      t.appendChild(tg);
+    }
+    bh.appendChild(t);
+    if (b.time) {
+      const badge = document.createElement("span");
+      badge.className = "time-badge";
+      badge.textContent = b.time + " min";
+      bh.appendChild(badge);
+    }
+    sec.appendChild(bh);
+
+    if (b.chips) {
+      const chips = document.createElement("div");
+      chips.className = "waste-chips";
+      b.chips.forEach(c => {
+        const el = document.createElement("span");
+        el.className = "waste-chip w-" + c.toLowerCase();
+        el.textContent = c;
+        chips.appendChild(el);
+      });
+      sec.appendChild(chips);
+    }
+
+    if (b.empty) {
+      const n = document.createElement("div");
+      n.className = "nothing";
+      const i = document.createElement("span");
+      i.className = "ico"; i.textContent = b.empty.icon;
+      const p = document.createElement("span");
+      p.textContent = b.empty.text;
+      n.append(i, p);
+      sec.appendChild(n);
+    } else {
+      const ul = document.createElement("ul");
+      ul.className = "tasks";
+      b.items.forEach(it => { const li = document.createElement("li"); li.appendChild(taskEl(it)); ul.appendChild(li); });
+      sec.appendChild(ul);
+    }
+
+    if (b.note) {
+      const n = document.createElement("div");
+      n.className = "block-note";
+      n.style.marginTop = "6px";
+      n.textContent = b.note;
+      sec.appendChild(n);
+    }
+
+    host.appendChild(sec);
+  });
+
+  const all = blocks.flatMap(b => b.items);
+  if (all.length && all.every(i => get(i.scope, i.id))) {
+    const done = document.createElement("div");
+    done.className = "all-done";
+    done.textContent = "✓ Giornata chiusa. Niente altro in programma.";
+    host.appendChild(done);
+  }
+}
+
+function renderWeek() {
+  const host = document.getElementById("weekBody");
+  host.innerHTML = "";
+  const todayId = DAY_IDS[new Date().getDay()];
+
+  WEEK.forEach(day => {
+    const row = document.createElement("div");
+    row.className = "mini" + (day.id === todayId ? " is-today" : "");
+
+    const dn = document.createElement("div");
+    dn.className = "mini-day";
+    dn.textContent = day.name;
+
+    const body = document.createElement("div");
+    body.className = "mini-body";
+    const f = document.createElement("div");
+    f.className = "mini-focus";
+    f.textContent = day.focus;
+    body.appendChild(f);
+
+    const parts = day.tasks.slice();
+    let mins = day.time;
+    if (day.monthly) {
+      if (isBiweeklyWeek()) { parts.push(BIWEEKLY.item.toLowerCase()); mins += BIWEEKLY.time; }
+      const b = currentBlock();
+      parts.push(b.name);
+      mins += b.time;
+    }
+    if (WASTE[day.id]) { parts.push("raccolta: " + WASTE[day.id].join(", ").toLowerCase()); mins += 2; }
+
+    if (parts.length) {
+      const l = document.createElement("div");
+      l.className = "mini-list";
+      l.textContent = parts.join(" · ");
+      body.appendChild(l);
+    }
+
+    const time = document.createElement("div");
+    time.className = "mini-time";
+    time.textContent = mins ? mins + " min" : "—";
+
+    const ids = day.tasks.map((_, i) => day.id + ":" + i);
+    if (day.monthly) {
+      currentBlock().tasks.forEach((_, i) => ids.push("mo:" + i));
+      if (isBiweeklyWeek()) ids.push("bi:0");
+    }
+    if (WASTE[day.id]) ids.push("waste:" + day.id);
+    if (ids.length && ids.every(id => get("weekly", id))) row.classList.add("done");
+
+    row.append(dn, body, time);
+    host.appendChild(row);
+  });
+}
+
+function renderStats() {
+  const blocks = todayBlocks();
+  const items = blocks.flatMap(b => b.items);
+  const done = items.filter(i => get(i.scope, i.id)).length;
+  document.getElementById("statToday").textContent = done + "/" + items.length;
+
+  let left = 0;
+  blocks.forEach(b => {
+    if (!b.items.length) return;
+    const undone = b.items.filter(i => !get(i.scope, i.id)).length;
+    left += Math.round(b.time / b.items.length * undone);
+  });
+  document.getElementById("statMin").textContent = left === 0 ? "fatto ✓" : "~" + left + " min";
+
+  let wT = 0, wD = 0;
+  WEEK.forEach(d => d.tasks.forEach((_, i) => { wT++; if (get("weekly", d.id + ":" + i)) wD++; }));
+  currentBlock().tasks.forEach((_, i) => { wT++; if (get("weekly", "mo:" + i)) wD++; });
+  if (isBiweeklyWeek()) { wT++; if (get("weekly", "bi:0")) wD++; }
+  Object.keys(WASTE).forEach(k => { wT++; if (get("weekly", "waste:" + k)) wD++; });
+  document.getElementById("statWeek").textContent = wD + "/" + wT;
+  document.getElementById("weekBar").style.width = (wT ? wD / wT * 100 : 0) + "%";
+
+  const el = document.getElementById("todayMin");
+  if (el) el.textContent = left === 0 ? "tutto fatto" : "~" + left + " min rimasti";
+}
+
+function render() {
+  if (!WEEK) return;
+  const n = new Date();
+  document.getElementById("dateChip").textContent =
+    n.getDate() + " " + MONTHS[n.getMonth()] + " " + n.getFullYear();
+  renderToday(); renderWeek(); renderStats();
+}
+
+const now = new Date();
+
+document.getElementById("resetDay").addEventListener("click", () => {
+  state.daily = {};
+  const dayId = DAY_IDS[new Date().getDay()];
+  todayBlocks().forEach(b => b.items.forEach(i => { if (i.scope === "weekly") delete state.weekly[i.id]; }));
+  touch();
+});
+document.getElementById("resetWeek").addEventListener("click", () => {
+  state.weekly = {}; touch();
+});
+
+
+/* ============ SINCRONIZZAZIONE (GitHub, come gymlog) ============ */
+
+const SYNC_KEY = "pianoCasa.sync";
+const PLAN_CACHE = "pianoCasa.plan";
+const DATA_DIR = "piano-casa/";
+
+function readSync() {
+  try {
+    const own = JSON.parse(localStorage.getItem(SYNC_KEY) || "null");
+    if (own && own.repo && own.token) return own;
+    const g = JSON.parse(localStorage.getItem("gymlog-sync-v1") || "null");
+    if (g && g.repo && g.token) return { repo: g.repo, token: g.token };
+  } catch (e) {}
+  return null;
+}
+let sync = readSync();
+
+function b64(str) {
+  const bytes = new TextEncoder().encode(str); let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function unb64(str) {
+  const bin = atob(str.replace(/\s/g, ""));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function gh(path, method, body) {
+  return fetch("https://api.github.com/repos/" + sync.repo + "/contents/" + DATA_DIR + path, {
+    method: method || "GET", cache: "no-store",
+    headers: { "Authorization": "Bearer " + sync.token, "Accept": "application/vnd.github+json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+}
+async function getJson(path) {
+  const r = await gh(path);
+  if (r.status === 404) return { json: null, sha: null };
+  if (!r.ok) throw r.status;
+  const j = await r.json();
+  return { json: JSON.parse(unb64(j.content)), sha: j.sha };
+}
+function errText(e) {
+  if (e === 401) return "codice di accesso non valido o scaduto";
+  if (e === 403 || e === 404) return "nessun accesso all'archivio " + (sync ? sync.repo : "");
+  if (typeof e === "number") return "errore GitHub " + e;
+  return "nessuna connessione";
+}
+function setSyncNote(kind, e) {
+  const el = document.getElementById("syncNote");
+  if (!el) return;
+  if (!sync) { el.textContent = "Spunte salvate solo su questo dispositivo."; return; }
+  if (kind === "busy") { el.textContent = "Sincronizzazione…"; return; }
+  if (kind === "err") { el.textContent = "Sincronizzazione non riuscita: " + errText(e) + ". Riprovo alla prossima modifica."; return; }
+  const t = new Date();
+  el.textContent = "Spunte sincronizzate con GitHub alle " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0") + ".";
+}
+
+let stateSha = null, pushTimer = null, pushing = false;
+function schedulePush() {
+  if (!sync) return;
+  clearTimeout(pushTimer);
+  setSyncNote("busy");
+  pushTimer = setTimeout(() => pushState(2), 1200);
+}
+async function pushState(retry) {
+  if (!sync) return;
+  if (pushing) { schedulePush(); return; }
+  pushing = true;
+  try {
+    if (stateSha === null) stateSha = (await getJson("state.json")).sha;
+    const body = { message: "Piano casa " + new Date().toISOString().slice(0, 16), content: b64(JSON.stringify(state)) };
+    if (stateSha) body.sha = stateSha;
+    const r = await gh("state.json", "PUT", body);
+    if ((r.status === 409 || r.status === 422) && retry > 0) { stateSha = null; pushing = false; return pushState(retry - 1); }
+    if (!r.ok) throw r.status;
+    stateSha = (await r.json()).content.sha;
+    setSyncNote("ok");
+  } catch (e) { setSyncNote("err", e); }
+  finally { pushing = false; }
+}
+async function pullState() {
+  if (!sync || !WEEK) return;
+  try {
+    const cur = await getJson("state.json");
+    stateSha = cur.sha;
+    if (cur.json && (cur.json.updatedAt || 0) > (state.updatedAt || 0)) {
+      state = normalize(cur.json); save(); render();
+    }
+    setSyncNote("ok");
+  } catch (e) { setSyncNote("err", e); }
+}
+
+function showSetup(msg) {
+  const box = document.getElementById("setup");
+  box.hidden = false;
+  document.getElementById("setupMsg").textContent = msg || "";
+}
+document.getElementById("setupGo").addEventListener("click", async () => {
+  const repo = document.getElementById("setupRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/+$/, "");
+  const token = document.getElementById("setupToken").value.trim();
+  if (!repo || !token) { document.getElementById("setupMsg").textContent = "Inserisci archivio e codice di accesso."; return; }
+  sync = { repo, token };
+  document.getElementById("setupMsg").textContent = "Controllo…";
+  try {
+    const p = await getJson("plan.json");
+    if (!p.json) throw 404;
+    localStorage.setItem(SYNC_KEY, JSON.stringify(sync));
+    document.getElementById("setup").hidden = true;
+    boot();
+  } catch (e) { sync = null; document.getElementById("setupMsg").textContent = "Non riesco a collegarmi: " + errText(e) + "."; }
+});
+
+async function boot() {
+  const cached = localStorage.getItem(PLAN_CACHE);
+  if (cached) { try { applyPlan(JSON.parse(cached)); render(); } catch (e) {} }
+  if (!sync) { if (!WEEK) showSetup(); setSyncNote(); return; }
+  try {
+    const p = await getJson("plan.json");
+    if (p.json) { localStorage.setItem(PLAN_CACHE, JSON.stringify(p.json)); applyPlan(p.json); render(); }
+    else if (!WEEK) throw 404;
+    await pullState();
+  } catch (e) {
+    if (!WEEK) showSetup("Non riesco a caricare il piano: " + errText(e) + ".");
+    else setSyncNote("err", e);
+  }
+}
+
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("service-worker.js").catch(() => {});
+}
+
+boot();
+
+// Se la pagina resta aperta oltre la mezzanotte, ricarica lo stato al ritorno.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    const fresh = load();
+    if (fresh.day !== state.day || fresh.week !== state.week) { state = fresh; save(); render(); }
+    pullState();
+  }
+});
+</script>
+</body>
+</html>
