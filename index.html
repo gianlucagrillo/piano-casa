@@ -332,7 +332,15 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 }
 .focus.has-photo .focus-text { margin-top: auto; margin-bottom: 18px; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
 .focus.has-photo .focus-btn { margin-top: 0; }
-.focus.has-photo .focus-praise { bottom: auto; top: 42%; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.5); }</style>
+.focus.has-photo .focus-praise { bottom: auto; top: 42%; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.5); }
+/* ---------- Cornice bianca intorno alla foto ---------- */
+.focus.has-photo {
+  border: 10px solid #fff; border-radius: 28px;
+  background-clip: padding-box; background-origin: padding-box;
+  padding: 20px 14px 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.35);
+}
+.focus.has-photo .focus-btn { border-radius: 12px; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -1118,7 +1126,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 // Azzera le task di oggi (per provare il piano): tre tocchi rapidi sul giorno/data, oppure tienili premuti 1 secondo.
 (function () {
   const row = document.querySelector(".title-row");
-  row.style.cssText += ";user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;padding:12px 0;margin-top:-12px;";
+  row.style.cssText += ";user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;padding:12px 0 12px 4px;margin-top:-12px;";
   function resetToday() {
     if (navigator.vibrate) navigator.vibrate(30);
     setTimeout(() => {
