@@ -89,9 +89,8 @@ body {
 
 /* ---------- Header ---------- */
 header { margin-bottom: 22px; }
-.title-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: 64px; align-items: baseline; }
-#dayChip { text-align: right; }
-#dateChip { text-align: left; }
+.title-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0; align-items: baseline; width: 100vw; margin-left: calc(50% - 50vw); }
+#dayChip, #dateChip { text-align: center; }
 h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
 .date-chip {
   font-size: 0.85rem; font-weight: 600; color: var(--cp-text-muted);
