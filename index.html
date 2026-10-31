@@ -289,7 +289,20 @@ header { margin-bottom: 0 !important; }
 .focus-undo { position: absolute; top: 100%; left: 0; right: 0; }
 footer { position: fixed; left: 0; right: 0; bottom: calc(var(--pad-bot) + 8px); text-align: center; }
 .focus:not(.focus-done-all) .focus-text { font-size: 2rem; line-height: 1.2; margin: 0 0 22px; }
-</style>
+
+/* ---------- Ricompensa al completamento ---------- */
+.focus { position: relative; overflow: hidden; }
+.focus-progress { height: 5px; border-radius: 99px; background: rgba(127,127,127,.18); overflow: hidden; margin: -6px 0 22px; }
+.focus-progress i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--cp-accent), #ffd166); transition: width .45s cubic-bezier(.2,.9,.3,1.2); }
+.focus-btn { transition: background .2s ease, transform .2s ease; }
+.focus-btn.ok { background: #16a34a !important; color: #fff !important; font-size: 1.6rem; animation: okPop .42s cubic-bezier(.2,1.6,.4,1); }
+@keyframes okPop { 0% { transform: scale(.9); } 55% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.focus.win { animation: winGlow .6s ease; }
+@keyframes winGlow { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,.55); } 100% { box-shadow: 0 0 0 26px rgba(22,163,74,0); } }
+.focus-praise { position: absolute; left: 0; right: 0; bottom: 104px; text-align: center; font-size: 1.5rem; font-weight: 700; color: #16a34a; animation: praiseUp .7s cubic-bezier(.2,1.4,.4,1) both; pointer-events: none; }
+@keyframes praiseUp { 0% { opacity: 0; transform: translateY(16px) scale(.8); } 100% { opacity: 1; transform: none; } }
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 99; }
+@media (prefers-reduced-motion: reduce) { .focus-btn.ok, .focus.win, .focus-praise { animation: none; } }</style>
 </head>
 <body>
 <div class="wrap">
@@ -754,7 +767,12 @@ function renderFocus(animate) {
     const txt = document.createElement("div");
     txt.className = "focus-text";
     txt.textContent = next.block.chips ? "Porta fuori la raccolta" : next.text;
-    card.append(txt);
+    const prog = document.createElement("div");
+    prog.className = "focus-progress";
+    const fill = document.createElement("i");
+    fill.style.width = ((total - pending.length) / total * 100) + "%";
+    prog.appendChild(fill);
+    card.append(prog, txt);
     if (next.block.chips) {
       const chips = document.createElement("div");
       chips.className = "waste-chips";
@@ -790,7 +808,31 @@ function renderFocus(animate) {
 }
 
 function completeFocus(item, card) {
-  card.classList.add("leave");
+  if (card.dataset.busy) return;
+  card.dataset.busy = "1";
+  const items = [];
+  todayBlocks().forEach(b => b.items.forEach(it => items.push(Object.assign({ block: b }, it))));
+  const remaining = items.filter(it => !get(it.scope, it.id) && it.id !== item.id);
+  const dayDone = remaining.length === 0;
+  const blockDone = !remaining.some(it => it.block.key === item.block.key);
+  const doneCount = items.length - remaining.length;
+
+  // 1) Feedback immediato: pulsante che diventa una spunta, vibrazione, suono, barra che avanza.
+  const btn = card.querySelector(".focus-btn");
+  if (btn) { btn.classList.add("ok"); btn.textContent = "✓"; }
+  card.classList.add("win");
+  const bar = card.querySelector(".focus-progress i");
+  if (bar) bar.style.width = (doneCount / items.length * 100) + "%";
+  if (navigator.vibrate) navigator.vibrate(dayDone ? [20, 60, 20, 60, 40] : blockDone ? [15, 50, 25] : 18);
+  chime(dayDone ? 3 : blockDone ? 2 : 1);
+  const praise = document.createElement("div");
+  praise.className = "focus-praise";
+  praise.textContent = dayDone ? "Giornata chiusa!" : blockDone ? pick(PRAISE_BLOCK) : pick(PRAISE);
+  card.appendChild(praise);
+  if (dayDone) confetti();
+
+  // 2) Poi la card scorre via e arriva la prossima.
+  setTimeout(() => card.classList.add("leave"), dayDone ? 900 : 520);
   setTimeout(() => {
     state[item.scope][item.id] = true;
     state.updatedAt = Date.now(); save(); schedulePush();
@@ -798,7 +840,60 @@ function completeFocus(item, card) {
     clearTimeout(undoTimer);
     undoTimer = setTimeout(() => { lastDone = null; const u = document.querySelector(".focus-undo"); if (u) u.hidden = true; }, 6000);
     renderFocus(true); renderWeek(); renderStats();
-  }, 220);
+  }, dayDone ? 1120 : 740);
+}
+
+/* ---------- Ricompense: frasi, suono, coriandoli ---------- */
+
+const PRAISE = ["Fatto!", "Una in meno", "Bene così", "Avanti", "Ottimo", "Vai così", "Perfetto", "Spuntata"];
+const PRAISE_BLOCK = ["Blocco chiuso!", "Pezzo finito!", "Anche questo è fatto!"];
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+let audioCtx = null;
+function chime(level) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = level >= 3 ? [659.25, 783.99, 987.77, 1318.5] : level === 2 ? [659.25, 880, 1174.66] : [880, 1318.5];
+    const t0 = audioCtx.currentTime;
+    notes.forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      const t = t0 + i * 0.075;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.16, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.4);
+    });
+  } catch (e) {}
+}
+
+function confetti() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = document.createElement("canvas");
+  cv.className = "confetti";
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+  document.body.appendChild(cv);
+  const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+  const colors = ["#ff8fa3", "#ffd166", "#06d6a0", "#4cc9f0", "#c77dff", "#ffffff"];
+  const parts = Array.from({ length: 140 }, () => ({
+    x: innerWidth / 2, y: innerHeight * 0.45,
+    vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
+    r: Math.random() * 6 + 4, c: colors[Math.floor(Math.random() * colors.length)],
+    a: Math.random() * Math.PI, va: (Math.random() - 0.5) * 0.4
+  }));
+  const start = performance.now();
+  (function frame(t) {
+    const k = (t - start) / 1800;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    parts.forEach(p => {
+      p.vy += 0.35; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+      ctx.save(); ctx.globalAlpha = Math.max(0, 1 - k); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore();
+    });
+    if (k < 1) requestAnimationFrame(frame); else cv.remove();
+  })(start);
 }
 
 const now = new Date();
