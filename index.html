@@ -247,6 +247,32 @@ footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--cp-bor
 .setup p { margin: 0 0 12px; color: var(--cp-text-muted); font-size: 14px; line-height: 1.45; }
 .setup input { display: block; width: 100%; box-sizing: border-box; margin: 0 0 10px; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--cp-border); background: var(--cp-bg-elevated); color: var(--cp-text); font-size: 15px; }
 .setup .setup-msg { margin: 10px 0 0; color: var(--cp-danger); }
+
+/* ---------- Una task alla volta ---------- */
+header .stats, header .bar, details.week, details.rules, .toolbar { display: none !important; }
+.today-card { background: none; border: none; box-shadow: none; overflow: visible; }
+.focus {
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 22px;
+  padding: 34px 24px 26px; text-align: center; margin-top: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.focus.enter { animation: focusIn .28s ease both; }
+.focus.leave { opacity: 0; transform: translateY(-14px) scale(.98); }
+@keyframes focusIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.focus-ctx { font-size: .8rem; font-weight: 600; color: var(--cp-text-soft); letter-spacing: .02em; }
+.focus-text { font-size: 1.45rem; font-weight: 650; line-height: 1.3; letter-spacing: -0.01em; margin: 14px 0 22px; color: var(--cp-text); }
+.focus .waste-chips { justify-content: center; margin: -8px 0 22px; }
+.focus-btn {
+  width: 100%; border: none; border-radius: 14px; padding: 15px 18px; font-size: 1.05rem; font-weight: 650;
+  background: var(--cp-accent); color: var(--cp-accent-fg); cursor: pointer;
+}
+.focus-btn:active { transform: scale(.98); }
+.focus-done-all .focus-check { font-size: 2.2rem; color: var(--cp-accent); }
+.focus-done-all .focus-text { margin: 8px 0 6px; }
+.focus-undo { display: block; margin: 14px auto 0; background: none; border: none; color: var(--cp-text-muted); font-size: .85rem; text-decoration: underline; cursor: pointer; }
+.focus-undo[hidden] { display: none; }
+footer:has(#syncNote:empty) { display: none; }
 </style>
 </head>
 <body>
@@ -664,7 +690,78 @@ function render() {
   const n = new Date();
   document.getElementById("dateChip").textContent =
     n.getDate() + " " + MONTHS[n.getMonth()] + " " + n.getFullYear();
-  renderToday(); renderWeek(); renderStats();
+  renderFocus(); renderWeek(); renderStats();
+}
+
+/* ============ UNA TASK ALLA VOLTA ============ */
+
+let lastDone = null, undoTimer = null;
+
+function renderFocus(animate) {
+  const host = document.getElementById("todayCard");
+  const items = [];
+  todayBlocks().forEach(b => b.items.forEach(it => items.push(Object.assign({ block: b }, it))));
+  const total = items.length;
+  const next = items.find(it => !get(it.scope, it.id));
+  host.innerHTML = "";
+
+  const card = document.createElement("div");
+  card.className = "focus" + (animate ? " enter" : "");
+  if (!next) {
+    card.classList.add("focus-done-all");
+    card.innerHTML = '<div class="focus-check">✓</div><div class="focus-text">Giornata chiusa</div><div class="focus-ctx">Niente altro da fare oggi.</div>';
+  } else {
+    const pos = items.indexOf(next) + 1;
+    const ctx = document.createElement("div");
+    ctx.className = "focus-ctx";
+    ctx.textContent = next.block.title + " · " + pos + " di " + total;
+    const txt = document.createElement("div");
+    txt.className = "focus-text";
+    txt.textContent = next.block.chips ? "Porta fuori la raccolta" : next.text;
+    card.append(ctx, txt);
+    if (next.block.chips) {
+      const chips = document.createElement("div");
+      chips.className = "waste-chips";
+      next.block.chips.forEach(c => {
+        const el = document.createElement("span");
+        el.className = "waste-chip w-" + c.toLowerCase();
+        el.textContent = c;
+        chips.appendChild(el);
+      });
+      card.appendChild(chips);
+    }
+    const btn = document.createElement("button");
+    btn.className = "focus-btn";
+    btn.textContent = "Fatto";
+    btn.addEventListener("click", () => completeFocus(next, card));
+    card.appendChild(btn);
+  }
+  host.appendChild(card);
+
+  const undo = document.createElement("button");
+  undo.className = "focus-undo";
+  undo.textContent = "Annulla l'ultima";
+  undo.hidden = !lastDone;
+  undo.addEventListener("click", () => {
+    if (!lastDone) return;
+    const it = lastDone; lastDone = null; clearTimeout(undoTimer);
+    state[it.scope][it.id] = false;
+    state.updatedAt = Date.now(); save(); schedulePush();
+    renderFocus(true); renderWeek(); renderStats();
+  });
+  host.appendChild(undo);
+}
+
+function completeFocus(item, card) {
+  card.classList.add("leave");
+  setTimeout(() => {
+    state[item.scope][item.id] = true;
+    state.updatedAt = Date.now(); save(); schedulePush();
+    lastDone = { scope: item.scope, id: item.id };
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => { lastDone = null; const u = document.querySelector(".focus-undo"); if (u) u.hidden = true; }, 6000);
+    renderFocus(true); renderWeek(); renderStats();
+  }, 220);
 }
 
 const now = new Date();
@@ -729,11 +826,8 @@ function errText(e) {
 function setSyncNote(kind, e) {
   const el = document.getElementById("syncNote");
   if (!el) return;
-  if (!sync) { el.textContent = "Spunte salvate solo su questo dispositivo."; return; }
-  if (kind === "busy") { el.textContent = "Sincronizzazione…"; return; }
-  if (kind === "err") { el.textContent = "Sincronizzazione non riuscita: " + errText(e) + ". Riprovo alla prossima modifica."; return; }
-  const t = new Date();
-  el.textContent = "Spunte sincronizzate con GitHub alle " + String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0") + ".";
+  // Si vede solo se qualcosa non va.
+  el.textContent = (kind === "err" && sync) ? "Sincronizzazione non riuscita: " + errText(e) + ". Riprovo alla prossima modifica." : "";
 }
 
 let stateSha = null, pushTimer = null, pushing = false;
