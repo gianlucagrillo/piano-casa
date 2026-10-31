@@ -889,7 +889,8 @@ function attachHold(card, item) {
     ov.style.clipPath = "circle(0px at " + x + "px " + y + "px)";
     document.body.appendChild(ov);
     card.classList.add("pressing");
-    if (navigator.vibrate) navigator.vibrate(8);
+    // Vibrazione che cresce: impulsi sempre più lunghi e ravvicinati fino al completamento.
+    if (navigator.vibrate) navigator.vibrate([4, 70, 6, 55, 9, 42, 13, 32, 18, 24, 24, 16, 32, 10, 42, 6, 55]);
     t0 = performance.now();
     const tick = now => {
       const p = Math.min(1, (now - t0) / HOLD_MS);
@@ -903,6 +904,7 @@ function attachHold(card, item) {
   const cancel = () => {
     if (done || !ov) return;
     cancelAnimationFrame(raf);
+    if (navigator.vibrate) navigator.vibrate(0);
     card.classList.remove("pressing");
     const o = ov; ov = null;
     o.style.transition = "clip-path .25s ease";
@@ -921,7 +923,7 @@ function finishHold(ov, item, card) {
 
   ov.style.clipPath = "none";
   ov.classList.add("drawn");
-  if (navigator.vibrate) navigator.vibrate(dayDone ? [20, 60, 20, 60, 40] : blockDone ? [15, 50, 25] : [12, 40, 22]);
+  if (navigator.vibrate) navigator.vibrate(dayDone ? [90, 60, 40, 40, 60] : blockDone ? [80, 50, 40] : 80);
   chime(dayDone ? 3 : blockDone ? 2 : 1);
 
   // Il verde si raccoglie in un cerchio con la spunta, poi esplodono i coriandoli.
@@ -934,7 +936,7 @@ function finishHold(ov, item, card) {
       ov.style.clipPath = "circle(56px at " + cx + "px " + cy + "px)";
     });
     ov.querySelector(".hold-praise").textContent = dayDone ? "Giornata chiusa!" : blockDone ? pick(PRAISE_BLOCK) : pick(PRAISE);
-    setTimeout(() => { ov.classList.add("show-praise"); confetti(cx, cy, dayDone ? 160 : 70); }, 300);
+    setTimeout(() => ov.classList.add("show-praise"), 300);
   }, 420);
 
   setTimeout(() => ov.classList.add("fade"), dayDone ? 1900 : 1450);
