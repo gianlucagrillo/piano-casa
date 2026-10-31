@@ -400,7 +400,18 @@ html.cards-v2 .focus.has-photo .focus-progress { position: absolute; top: 16px; 
 html.cards-v2 .focus.has-photo .focus-text { margin: 22px 22px 6px !important; color: #2b2d33; text-shadow: none; font-size: 1.9rem; line-height: 1.15; }
 html.cards-v2 .focus.has-photo .focus-sub { margin: 0 22px; color: #4a4f57; text-shadow: none; font-size: 1.05rem; }
 html.cards-v2 .focus.has-photo .focus-desc { margin: 10px 22px 0; color: #6b7079; text-shadow: none; font-size: .95rem; line-height: 1.45; }
-html.cards-v2 .focus.has-photo .swipe-label { top: 26%; }</style>
+html.cards-v2 .focus.has-photo .swipe-label { top: 26%; }
+/* ---------- Mazzo di card ---------- */
+#todayCard { position: relative; }
+#todayCard .focus { position: absolute !important; top: 0; left: 0; right: 0; margin: 0 !important; box-sizing: border-box; }
+#todayCard .focus.front { z-index: 3; }
+#todayCard .focus.behind { pointer-events: none; transform-origin: 50% 0; }
+#todayCard .focus.behind .focus-progress { opacity: 0; }
+#todayCard .focus.depth-1 { z-index: 2; transform: translateY(-14px) scale(.95); filter: brightness(.8); }
+#todayCard .focus.depth-2 { z-index: 1; transform: translateY(-26px) scale(.90); filter: brightness(.6); }
+#todayCard .focus.promote { animation: promote .32s cubic-bezier(.2,.8,.3,1) both; transform-origin: 50% 0; }
+@keyframes promote { from { transform: translateY(-14px) scale(.95); filter: brightness(.8); } to { transform: none; filter: none; } }
+#todayCard .focus-undo { position: absolute; left: 0; right: 0; top: 100%; z-index: 4; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -853,6 +864,27 @@ function postponed(it) { return state.daily[ppKey(it)] || null; }
 function startHourOf(it) { const p = postponed(it); return Math.max(blockStartHour(it.block.key), p ? p.h : 0); }
 function queueOrder(it) { const p = postponed(it); return p ? p.s : 0; }
 
+function buildCard(it, total, doneCount) {
+  const card = document.createElement("div");
+  card.className = "focus";
+  const info = cardInfo(it);
+  const prog = document.createElement("div");
+  prog.className = "focus-progress";
+  const fill = document.createElement("i");
+  fill.style.width = (doneCount / total * 100) + "%";
+  prog.appendChild(fill);
+  const txt = document.createElement("div");
+  txt.className = "focus-text";
+  txt.textContent = info.t;
+  card.append(prog, txt);
+  if (info.s) { const s = document.createElement("div"); s.className = "focus-sub"; s.textContent = info.s; card.appendChild(s); }
+  if (info.d) { const d = document.createElement("div"); d.className = "focus-desc"; d.textContent = info.d; card.appendChild(d); }
+  const photo = photoFor(it);
+  if (photo) { card.classList.add("has-photo"); card.style.setProperty("--photo", "url('" + photo + "')"); }
+  return card;
+}
+
+// Le card sono impilate: la prossima è subito dietro quella attuale. Quando il blocco è finito resta solo lo sfondo.
 function renderFocus(animate) {
   const host = document.getElementById("todayCard");
   const items = [];
@@ -860,46 +892,29 @@ function renderFocus(animate) {
   const total = items.length;
   const hourNow = new Date().getHours();
   const pending = items.filter(it => !get(it.scope, it.id));
-  const available = pending.filter(it => startHourOf(it) <= hourNow);
-  const next = available.slice().sort((a, b) => queueOrder(a) - queueOrder(b))[0];
+  const queue = pending.filter(it => startHourOf(it) <= hourNow).sort((a, b) => queueOrder(a) - queueOrder(b));
+  const doneCount = total - pending.length;
   host.innerHTML = "";
 
-  const card = document.createElement("div");
-  card.className = "focus" + (animate ? " enter" : "");
-  if (!next && pending.length) {
-    const at = Math.min(...pending.map(startHourOf));
-    card.classList.add("focus-done-all");
-    card.innerHTML = '<div class="focus-check">☕</div><div class="focus-text">Nothing to do right now</div><div class="focus-ctx"></div>';
-    card.querySelector(".focus-ctx").textContent = "Next tasks show up at " + hourLabel(at) + ".";
-  } else if (!next) {
-    card.classList.add("focus-done-all");
-    card.innerHTML = '<div class="focus-check">✓</div><div class="focus-text">All done for today</div><div class="focus-ctx">Nothing else to do today.</div>';
-  } else {
-    const pos = items.indexOf(next) + 1;
-    const ctx = document.createElement("div");
-    ctx.className = "focus-ctx";
-    ctx.textContent = next.block.title + " · " + pos + " di " + total;
-    const info = cardInfo(next);
-    const txt = document.createElement("div");
-    txt.className = "focus-text";
-    txt.textContent = info.t;
-    const prog = document.createElement("div");
-    prog.className = "focus-progress";
-    const fill = document.createElement("i");
-    fill.style.width = ((total - pending.length) / total * 100) + "%";
-    prog.appendChild(fill);
-    card.append(prog, txt);
-    if (info.s) { const s = document.createElement("div"); s.className = "focus-sub"; s.textContent = info.s; card.appendChild(s); }
-    if (info.d) { const d = document.createElement("div"); d.className = "focus-desc"; d.textContent = info.d; card.appendChild(d); }
-    const photo = photoFor(next);
-    if (photo) { card.classList.add("has-photo"); card.style.setProperty("--photo", "url('" + photo + "')"); }
+  // Dietro: fino a due card successive, sempre più piccole e scure.
+  queue.slice(1, 3).reverse().forEach((it, i, arr) => {
+    const back = buildCard(it, total, doneCount);
+    back.classList.add("behind", "depth-" + (arr.length - i));
+    host.appendChild(back);
+  });
+
+  const next = queue[0];
+  if (next) {
+    const card = buildCard(next, total, doneCount);
+    card.classList.add("front");
+    if (animate) card.classList.add("promote");
     const sl = document.createElement("div");
     sl.className = "swipe-label";
     sl.textContent = "Later";
     card.appendChild(sl);
+    host.appendChild(card);
     attachHold(card, next);
   }
-  host.appendChild(card);
   requestAnimationFrame(fitCard);
 
   const undo = document.createElement("button");
@@ -911,11 +926,10 @@ function renderFocus(animate) {
     const it = lastDone; lastDone = null; clearTimeout(undoTimer);
     state[it.scope][it.id] = false;
     state.updatedAt = Date.now(); save(); schedulePush();
-    renderFocus(true); renderWeek(); renderStats();
+    renderFocus(false); renderWeek(); renderStats();
   });
   host.appendChild(undo);
 }
-
 /* ---------- Tieni premuto: lo schermo si riempie di verde, poi spunta e coriandoli ---------- */
 
 const HOLD_MS = 700;
@@ -1311,14 +1325,14 @@ setInterval(() => {
 }, 30000);
 // Altezza della card: sotto lo stesso spazio che c'è tra la data e la card, misurato sullo schermo vero.
 function fitCard() {
-  const card = document.querySelector(".focus");
+  const host = document.getElementById("todayCard");
   const row = document.querySelector(".title-row");
-  if (!card || !row) return;
-  card.style.height = "";
-  const top = document.getElementById("todayCard").getBoundingClientRect().top + window.scrollY; // il contenitore non si anima
+  if (!host || !row) return;
+  const top = host.getBoundingClientRect().top + window.scrollY; // il contenitore non si anima
   const gap = top - (row.getBoundingClientRect().bottom + window.scrollY);
-  const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight) - top - gap;
-  card.style.height = Math.max(220, Math.round(h)) + "px";
+  const h = Math.max(220, Math.round((window.visualViewport ? window.visualViewport.height : window.innerHeight) - top - gap));
+  host.style.height = h + "px";
+  host.querySelectorAll(".focus").forEach(c => { c.style.height = h + "px"; });
 }
 window.addEventListener("resize", fitCard);
 if (window.visualViewport) window.visualViewport.addEventListener("resize", fitCard);
@@ -1349,7 +1363,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031164000";
+const APP_BUILD = "20261031165000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
