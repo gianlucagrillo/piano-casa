@@ -428,7 +428,10 @@ html.cards-v2 .focus.has-photo::before, html.cards-v2 .focus.has-photo.has-steps
 html.cards-v2 .focus.has-photo { padding-bottom: 20px !important; }
 html.cards-v2 .focus.has-photo .focus-text { margin-top: 18px !important; }
 .focus-steps li { padding-left: 18px !important; margin-bottom: 4px !important; }
-.focus-steps li::before { content: counter(st) "." !important; background: none !important; width: auto !important; height: auto !important; border-radius: 0 !important; color: var(--g-400) !important; font-size: .93rem !important; font-weight: 700 !important; display: inline !important; line-height: 1.35; }</style>
+.focus-steps li::before { content: counter(st) "." !important; background: none !important; width: auto !important; height: auto !important; border-radius: 0 !important; color: var(--g-400) !important; font-size: .93rem !important; font-weight: 700 !important; display: inline !important; line-height: 1.35; }
+/* ---------- Tempo e frequenza ---------- */
+.focus-meta { margin: 8px 22px 0; font-size: .8rem; font-weight: 600; color: var(--g-400); letter-spacing: .02em; text-transform: uppercase; }
+.focus:not(.has-photo) .focus-meta { color: var(--g-100); }</style>
 </head>
 <body>
 <div class="wrap">
@@ -506,7 +509,7 @@ function cardInfo(it) {
     const EN = { carta: "paper", vetro: "glass", plastica: "plastic", umido: "organic", indifferenziata: "general waste" };
     const list = it.block.chips.map(c => EN[c.toLowerCase()] || c.toLowerCase());
     const s = list.length > 1 ? list.slice(0, -1).join(", ") + " and " + list[list.length - 1] : list[0];
-    return { t: "Recycling", s: s.charAt(0).toUpperCase() + s.slice(1), steps: ["Close the bags.", "Take them to the bins outside."] };
+    return { t: "Recycling", s: s.charAt(0).toUpperCase() + s.slice(1), m: 2, steps: ["Close the bags.", "Take them to the bins outside."] };
   }
   return CARDS[it.text] || { t: it.text };
 }
@@ -881,6 +884,30 @@ function postponed(it) { return state.daily[ppKey(it)] || null; }
 function startHourOf(it) { const p = postponed(it); return Math.max(blockStartHour(it.block.key), p ? p.h : 0); }
 function queueOrder(it) { const p = postponed(it); return p ? p.s : 0; }
 
+// Ogni quanto si ripete la task, ricavato dal piano.
+const DAY_EN = { lun: "Monday", mar: "Tuesday", mer: "Wednesday", gio: "Thursday", ven: "Friday", sab: "Saturday", dom: "Sunday" };
+const DAY_SHORT = { lun: "Mon", mar: "Tue", mer: "Wed", gio: "Thu", ven: "Fri", sab: "Sat", dom: "Sun" };
+function freqFor(it) {
+  const k = it.block.key, t = it.text;
+  if (k === "mattina") return "Every morning";
+  if (k === "barba-am") return t === BEARD.morningSkip ? "After the dermaroller" : "Every morning";
+  if (k === "barba") {
+    if (t === BEARD.photo) return "Every 4 weeks";
+    if (BEARD.roller.includes(t)) return "Every " + DAY_EN[BEARD.rollerDay];
+    return "Every evening";
+  }
+  if (k === "sera") return ROUTINE.sera.prep.includes(t) ? "Before workdays" : "Every evening";
+  if (k === "mo") return "Every 4 weeks";
+  if (k === "bi") return "Every 2 weeks";
+  if (k === "waste") { const ds = Object.keys(WASTE).filter(d => WASTE[d].join() === it.block.chips.join()); return ds.length === 1 ? "Every " + DAY_EN[ds[0]] : ds.map(d => DAY_SHORT[d]).join(" and "); }
+  if (k === "day") {
+    const ds = WEEK.filter(d => d.tasks.includes(t)).map(d => d.id);
+    if (ds.length === 1) return "Every " + DAY_EN[ds[0]];
+    if (ds.length === 2) return DAY_SHORT[ds[0]] + " and " + DAY_SHORT[ds[1]];
+    return ds.length + " times a week";
+  }
+  return null;
+}
 function buildCard(it, total, doneCount) {
   const card = document.createElement("div");
   card.className = "focus";
@@ -895,6 +922,8 @@ function buildCard(it, total, doneCount) {
   txt.textContent = info.t;
   card.append(prog, txt);
   if (info.s) { const s = document.createElement("div"); s.className = "focus-sub"; s.textContent = info.s; card.appendChild(s); }
+  const meta = [info.m ? info.m + " min" : null, freqFor(it)].filter(Boolean).join("  ·  ");
+  if (meta) { const m = document.createElement("div"); m.className = "focus-meta"; m.textContent = meta; card.appendChild(m); }
   if (info.d) { const d = document.createElement("div"); d.className = "focus-desc"; d.textContent = info.d; card.appendChild(d); }
   if (info.steps && info.steps.length) {
     const ol = document.createElement("ol");
@@ -1397,7 +1426,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031171000";
+const APP_BUILD = "20261031171500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
