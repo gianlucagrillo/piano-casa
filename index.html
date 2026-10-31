@@ -868,14 +868,10 @@ function renderFocus(animate) {
       });
       card.appendChild(chips);
     }
-    const hint = document.createElement("div");
-    hint.className = "focus-hold";
-    hint.textContent = "Tieni premuto per completare · scorri per rimandare";
     const sl = document.createElement("div");
     sl.className = "swipe-label";
     sl.textContent = "Più tardi";
     card.appendChild(sl);
-    card.appendChild(hint);
     attachHold(card, next);
   }
   host.appendChild(card);
@@ -1327,7 +1323,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031151400";
+const APP_BUILD = "20261031151600";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
