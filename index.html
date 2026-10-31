@@ -431,7 +431,10 @@ html.cards-v2 .focus.has-photo .focus-text { margin-top: 18px !important; }
 .focus-steps li::before { content: counter(st) "." !important; background: none !important; width: auto !important; height: auto !important; border-radius: 0 !important; color: var(--g-400) !important; font-size: .93rem !important; font-weight: 700 !important; display: inline !important; line-height: 1.35; }
 /* ---------- Tempo e frequenza ---------- */
 .focus-meta { margin: 8px 22px 0; font-size: .8rem; font-weight: 600; color: var(--g-400); letter-spacing: .02em; text-transform: uppercase; }
-.focus:not(.has-photo) .focus-meta { color: var(--g-100); }</style>
+.focus:not(.has-photo) .focus-meta { color: var(--g-100); }
+/* ---------- Versione pulita: niente data, niente "Undo last", niente versione ---------- */
+#dayChip, #dateChip { visibility: hidden; }
+.focus-undo, .build-tag { display: none !important; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -1427,7 +1430,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031172100";
+const APP_BUILD = "20261031172600";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
