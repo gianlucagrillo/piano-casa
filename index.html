@@ -375,6 +375,8 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 .focus-hold { font-size: .82rem !important; }
 html { overflow: hidden; overscroll-behavior: none; }
 body { overflow: visible !important; }
+
+.build-tag { position: fixed; right: 10px; bottom: 6px; font-size: 10px; color: rgba(233,243,239,.35); z-index: 1; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -1325,12 +1327,12 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031151000";
+const APP_BUILD = "20261031151200";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
     const m = t.match(/const APP_BUILD = "([^"]+)"/);
-    if (m && m[1] !== APP_BUILD) location.reload();
+    if (m && m[1] !== APP_BUILD) { const q = new URLSearchParams(location.search); q.set("v", m[1]); location.replace(location.pathname + "?" + q.toString()); }
   } catch (e) {}
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
@@ -1349,6 +1351,9 @@ window.onAppResume = function () {
   a.href = "pianocasa://connect#" + encodeURIComponent(sync.token);
   document.body.appendChild(a);
 })();
+// Numero di versione piccolo in basso, per capire se il telefono ha l'ultima.
+(function () { const v = document.createElement("div"); v.className = "build-tag"; v.textContent = "v" + APP_BUILD.slice(8); document.body.appendChild(v); })();
+
 boot();
 
 // Se la pagina resta aperta oltre la mezzanotte, ricarica lo stato al ritorno.
