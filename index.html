@@ -93,7 +93,7 @@ header { margin-bottom: 22px; }
 h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
 .date-chip {
   font-size: 0.85rem; font-weight: 600; color: var(--cp-text-muted);
-  margin-left: auto; white-space: nowrap;
+  margin-left: auto; margin-right: 10px; white-space: nowrap;
 }
 .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .stat {
@@ -255,7 +255,7 @@ header .stats, header .bar, details.week, details.rules, .toolbar { display: non
 .today-card { background: none; border: none; box-shadow: none; overflow: visible; }
 .focus {
   background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 22px;
-  padding: 34px 24px 26px; text-align: center; margin-top: 18px;
+  padding: 30px 24px 26px; text-align: left; margin-top: 14vh;
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   transition: opacity .22s ease, transform .22s ease;
 }
@@ -264,7 +264,8 @@ header .stats, header .bar, details.week, details.rules, .toolbar { display: non
 @keyframes focusIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .focus-ctx { font-size: .8rem; font-weight: 600; color: var(--cp-text-soft); letter-spacing: .02em; }
 .focus-text { font-size: 1.45rem; font-weight: 650; line-height: 1.3; letter-spacing: -0.01em; margin: 14px 0 22px; color: var(--cp-text); }
-.focus .waste-chips { justify-content: center; margin: -8px 0 22px; }
+.focus .waste-chips { justify-content: flex-start; margin: -8px 0 22px; }
+.focus.focus-done-all { text-align: center; }
 .focus-btn {
   width: 100%; border: none; border-radius: 14px; padding: 15px 18px; font-size: 1.05rem; font-weight: 650;
   background: var(--cp-accent); color: var(--cp-accent-fg); cursor: pointer;
@@ -282,7 +283,6 @@ footer:has(#syncNote:empty) { display: none; }
 
 <header>
   <div class="title-row">
-    <h1>Piano Casa</h1>
     <span class="date-chip" id="dateChip"></span>
   </div>
   <div class="stats">
