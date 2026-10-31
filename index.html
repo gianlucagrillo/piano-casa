@@ -366,7 +366,13 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 .hold-ov.show-praise .hold-praise { opacity: 1; transform: none; text-shadow: 0 2px 12px rgba(0,0,0,.4); }
 @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(159,217,200,.55); } 100% { box-shadow: 0 0 0 40px rgba(159,217,200,0); } }
 .to-app { position: fixed; left: 0; right: 0; bottom: 14px; text-align: center; color: var(--g-100); font-size: .85rem; text-decoration: underline; z-index: 5; }
-</style>
+
+/* ---------- Swipe per rimandare ---------- */
+.focus.swiping { transition: none !important; }
+.swipe-label { position: absolute; top: 46%; left: 0; right: 0; text-align: center; font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: .02em; text-shadow: 0 2px 16px rgba(0,0,0,.6); opacity: 0; pointer-events: none; }
+.toast-pc { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 95; background: rgba(4,32,26,.92); color: #e9f3ef; border: 1px solid rgba(159,217,200,.35); padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; transition: opacity .35s ease, transform .35s ease; }
+.toast-pc.out { opacity: 0; transform: translate(-50%, 8px); }
+.focus-hold { font-size: .82rem !important; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -803,6 +809,12 @@ function blockStartHour(key) {
 }
 function hourLabel(h) { return String(h).padStart(2, "0") + ":00"; }
 
+// Rimandi (swipe): per ogni task rimandata, da che ora ricompare e in che ordine. Si azzerano ogni giorno.
+function ppKey(it) { return "pp:" + it.scope + ":" + it.id; }
+function postponed(it) { return state.daily[ppKey(it)] || null; }
+function startHourOf(it) { const p = postponed(it); return Math.max(blockStartHour(it.block.key), p ? p.h : 0); }
+function queueOrder(it) { const p = postponed(it); return p ? p.s : 0; }
+
 function renderFocus(animate) {
   const host = document.getElementById("todayCard");
   const items = [];
@@ -810,13 +822,14 @@ function renderFocus(animate) {
   const total = items.length;
   const hourNow = new Date().getHours();
   const pending = items.filter(it => !get(it.scope, it.id));
-  const next = pending.find(it => blockStartHour(it.block.key) <= hourNow);
+  const available = pending.filter(it => startHourOf(it) <= hourNow);
+  const next = available.slice().sort((a, b) => queueOrder(a) - queueOrder(b))[0];
   host.innerHTML = "";
 
   const card = document.createElement("div");
   card.className = "focus" + (animate ? " enter" : "");
   if (!next && pending.length) {
-    const at = Math.min(...pending.map(it => blockStartHour(it.block.key)));
+    const at = Math.min(...pending.map(startHourOf));
     card.classList.add("focus-done-all");
     card.innerHTML = '<div class="focus-check">☕</div><div class="focus-text">Per ora niente da fare</div><div class="focus-ctx"></div>';
     card.querySelector(".focus-ctx").textContent = "Le prossime cose compaiono alle " + hourLabel(at) + ".";
@@ -852,7 +865,11 @@ function renderFocus(animate) {
     }
     const hint = document.createElement("div");
     hint.className = "focus-hold";
-    hint.textContent = "Tieni premuto per completare";
+    hint.textContent = "Tieni premuto per completare · scorri per rimandare";
+    const sl = document.createElement("div");
+    sl.className = "swipe-label";
+    sl.textContent = "Più tardi";
+    card.appendChild(sl);
     card.appendChild(hint);
     attachHold(card, next);
   }
@@ -878,24 +895,24 @@ function renderFocus(animate) {
 const HOLD_MS = 700;
 
 function attachHold(card, item) {
-  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, done = false;
+  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, x0 = 0, y0 = 0, done = false, down = false, swiping = false, startT = null;
   const R = () => Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
   card.addEventListener("contextmenu", e => e.preventDefault());
-  card.addEventListener("pointerdown", e => {
-    if (done || ov) return;
-    x = e.clientX; y = e.clientY;
-    try { card.setPointerCapture(e.pointerId); } catch (_) {}
+
+  const startHold = () => {
+    if (done || ov || swiping || !down) return;
     ov = document.createElement("div");
     ov.className = "hold-ov";
     ov.innerHTML = '<svg class="hold-check" viewBox="0 0 52 52"><path d="M14 27.5 L22.5 36 L38.5 18"/></svg><div class="hold-praise"></div>';
     ov.style.clipPath = "circle(0px at " + x + "px " + y + "px)";
     document.body.appendChild(ov);
     card.classList.add("pressing");
-    // Vibrazione che cresce: impulsi sempre più lunghi e ravvicinati fino al completamento.
+    // Vibrazione che cresce fino al completamento.
     if (window.AndroidHaptics) AndroidHaptics.ramp(HOLD_MS);
     else if (navigator.vibrate) navigator.vibrate([4, 70, 6, 55, 9, 42, 13, 32, 18, 24, 24, 16, 32, 10, 42, 6, 55]);
     t0 = performance.now();
     const tick = now => {
+      if (!ov) return;
       const p = Math.min(1, (now - t0) / HOLD_MS);
       const e2 = p * p * (3 - 2 * p);
       ov.style.clipPath = "circle(" + Math.max(1, e2 * R()) + "px at " + x + "px " + y + "px)";
@@ -903,8 +920,9 @@ function attachHold(card, item) {
       else { done = true; finishHold(ov, item, card); }
     };
     raf = requestAnimationFrame(tick);
-  });
-  const cancel = () => {
+  };
+  const stopHold = () => {
+    clearTimeout(startT);
     if (done || !ov) return;
     cancelAnimationFrame(raf);
     if (window.AndroidHaptics) AndroidHaptics.cancel(); else if (navigator.vibrate) navigator.vibrate(0);
@@ -914,9 +932,78 @@ function attachHold(card, item) {
     o.style.clipPath = "circle(0px at " + x + "px " + y + "px)";
     setTimeout(() => o.remove(), 270);
   };
-  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => card.addEventListener(ev, cancel));
+
+  card.addEventListener("pointerdown", e => {
+    if (done || ov) return;
+    down = true; swiping = false;
+    x = x0 = e.clientX; y = y0 = e.clientY;
+    try { card.setPointerCapture(e.pointerId); } catch (_) {}
+    // Il riempimento parte solo se il dito resta fermo: così uno swipe non lo fa partire.
+    startT = setTimeout(startHold, 120);
+  });
+
+  card.addEventListener("pointermove", e => {
+    if (!down || done) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!swiping && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+      swiping = true; stopHold();
+      card.classList.add("swiping");
+    }
+    if (swiping) {
+      card.style.transform = "translateX(" + dx + "px) rotate(" + (dx / 22) + "deg)";
+      const lbl = card.querySelector(".swipe-label");
+      if (lbl) lbl.style.opacity = Math.min(1, Math.abs(dx) / (innerWidth * 0.3));
+    }
+  });
+
+  const end = e => {
+    if (!down) return;
+    down = false;
+    if (!swiping) { stopHold(); return; }
+    const dx = (e && e.clientX != null ? e.clientX : x0) - x0;
+    card.classList.remove("swiping");
+    if (Math.abs(dx) > innerWidth * 0.3) {
+      done = true;
+      const dir = dx > 0 ? 1 : -1;
+      card.style.transition = "transform .28s ease-in, opacity .28s ease-in";
+      card.style.transform = "translateX(" + dir * innerWidth * 1.3 + "px) rotate(" + dir * 18 + "deg)";
+      card.style.opacity = "0";
+      if (window.AndroidHaptics) AndroidHaptics.tick(); else if (navigator.vibrate) navigator.vibrate(15);
+      setTimeout(() => postpone(item), 260);
+    } else {
+      card.style.transition = "transform .3s cubic-bezier(.2,1.4,.4,1)";
+      card.style.transform = "";
+      const lbl = card.querySelector(".swipe-label"); if (lbl) lbl.style.opacity = 0;
+      setTimeout(() => { card.style.transition = ""; }, 320);
+    }
+  };
+  card.addEventListener("pointerup", end);
+  card.addEventListener("pointercancel", end);
 }
 
+// Rimanda la task al blocco successivo della giornata (es. dalla mattina alla sera).
+// Se è già l'ultimo blocco, la mette in fondo alla coda.
+function postpone(item) {
+  const hourNow = new Date().getHours();
+  const items = [];
+  todayBlocks().forEach(b => b.items.forEach(it => items.push(Object.assign({ block: b }, it))));
+  const hours = [...new Set(items.map(it => blockStartHour(it.block.key)).concat(EVENING_HOUR))].sort((a, b) => a - b);
+  const nextHour = hours.find(h => h > hourNow);
+  const maxSeq = Math.max(0, ...items.map(queueOrder));
+  state.daily[ppKey(item)] = { h: nextHour != null ? nextHour : hourNow, s: maxSeq + 1 };
+  state.updatedAt = Date.now(); save(); schedulePush();
+  toast(nextHour == null ? "In fondo alla lista" : nextHour >= EVENING_HOUR ? "Rimandata a stasera" : "Rimandata alle " + hourLabel(nextHour));
+  renderFocus(true);
+}
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast-pc";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add("out"), 1600);
+  setTimeout(() => t.remove(), 2000);
+}
 function finishHold(ov, item, card) {
   const items = [];
   todayBlocks().forEach(b => b.items.forEach(it => items.push(Object.assign({ block: b }, it))));
