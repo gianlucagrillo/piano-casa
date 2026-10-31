@@ -260,7 +260,7 @@ header .stats, header .bar, details.week, details.rules, .toolbar { display: non
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   transition: opacity .22s ease, transform .22s ease;
 }
-.focus.enter { animation: focusIn .28s ease both; }
+.focus.enter { animation: focusIn .28s ease backwards; }
 .focus.leave { opacity: 0; transform: translateY(-14px) scale(.98); }
 @keyframes focusIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .focus-ctx { font-size: .8rem; font-weight: 600; color: var(--cp-text-soft); letter-spacing: .02em; }
@@ -373,7 +373,8 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 .toast-pc { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 95; background: rgba(4,32,26,.92); color: #e9f3ef; border: 1px solid rgba(159,217,200,.35); padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; transition: opacity .35s ease, transform .35s ease; }
 .toast-pc.out { opacity: 0; transform: translate(-50%, 8px); }
 .focus-hold { font-size: .82rem !important; }
-html, body { overflow: hidden; overscroll-behavior: none; }
+html { overflow: hidden; overscroll-behavior: none; }
+body { overflow: visible !important; }
 </style>
 </head>
 <body>
@@ -1324,7 +1325,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031150900";
+const APP_BUILD = "20261031151000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
