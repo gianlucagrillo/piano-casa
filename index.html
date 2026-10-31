@@ -372,7 +372,9 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 .swipe-label { position: absolute; top: 46%; left: 0; right: 0; text-align: center; font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: .02em; text-shadow: 0 2px 16px rgba(0,0,0,.6); opacity: 0; pointer-events: none; }
 .toast-pc { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 95; background: rgba(4,32,26,.92); color: #e9f3ef; border: 1px solid rgba(159,217,200,.35); padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; transition: opacity .35s ease, transform .35s ease; }
 .toast-pc.out { opacity: 0; transform: translate(-50%, 8px); }
-.focus-hold { font-size: .82rem !important; }</style>
+.focus-hold { font-size: .82rem !important; }
+html, body { overflow: hidden; overscroll-behavior: none; }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -1322,7 +1324,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031150500";
+const APP_BUILD = "20261031150900";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
