@@ -1057,8 +1057,9 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 
 // Schermo intero: nell'app installata, al primo tocco nasconde anche le barre di sistema.
 (function () {
-  const installed = window.matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches;
-  if (!installed || !document.documentElement.requestFullscreen) return;
+  // Se il telefono ha già aperto l'app a schermo intero non serve: chiederlo di nuovo fa comparire l'avviso in basso.
+  const standaloneOnly = window.matchMedia("(display-mode: standalone)").matches && !window.matchMedia("(display-mode: fullscreen)").matches;
+  if (!standaloneOnly || !document.documentElement.requestFullscreen) return;
   const go = () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
   };
