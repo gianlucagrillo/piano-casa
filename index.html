@@ -1115,6 +1115,24 @@ function fitCard() {
 window.addEventListener("resize", fitCard);
 if (window.visualViewport) window.visualViewport.addEventListener("resize", fitCard);
 document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
+// Tieni premuta la data per 1 secondo: azzera le task di oggi (per provare il piano).
+(function () {
+  const row = document.querySelector(".title-row");
+  let t = null;
+  const start = () => { clearTimeout(t); t = setTimeout(() => {
+    if (navigator.vibrate) navigator.vibrate(30);
+    if (!confirm("Azzerare le task di oggi?")) return;
+    state.daily = {};
+    todayBlocks().forEach(b => b.items.forEach(i => { if (i.scope === "weekly") delete state.weekly[i.id]; }));
+    lastDone = null;
+    touch();
+  }, 1000); };
+  const stop = () => clearTimeout(t);
+  row.addEventListener("pointerdown", start);
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => row.addEventListener(ev, stop));
+  row.addEventListener("contextmenu", e => e.preventDefault());
+  row.style.userSelect = "none"; row.style.webkitUserSelect = "none";
+})();
 boot();
 
 // Se la pagina resta aperta oltre la mezzanotte, ricarica lo stato al ritorno.
