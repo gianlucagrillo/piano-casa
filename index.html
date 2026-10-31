@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -406,11 +406,11 @@ body { overflow: visible !important; }
 
 
 <div class="setup" id="setup" hidden>
-  <h2>Collega il piano</h2>
-  <p>Il piano e le spunte stanno nel tuo archivio privato su GitHub, come per gymlog. Inserisci lo stesso codice di accesso (token) che usi in gymlog.</p>
+  <h2>Connect your plan</h2>
+  <p>Your plan and check-offs live in your private GitHub repository, just like gymlog. Enter the same access token you use in gymlog.</p>
   <input id="setupRepo" value="gianlucagrillo/gymlog-data" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="owner/repo">
   <input id="setupToken" type="password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_…">
-  <button class="btn" id="setupGo">Collega</button>
+  <button class="btn" id="setupGo">Connect</button>
   <p class="setup-msg" id="setupMsg"></p>
 </div>
 
@@ -461,9 +461,10 @@ let ROUTINE, WEEK, MONTHLY, BIWEEKLY, WASTE, BEARD, CARDS = {};
 // Titolo essenziale, sottotitolo e descrizione della card (dal piano); se manca, il testo della task.
 function cardInfo(it) {
   if (it.block.chips) {
-    const list = it.block.chips.map(c => c.toLowerCase());
-    const s = list.length > 1 ? list.slice(0, -1).join(", ") + " e " + list[list.length - 1] : list[0];
-    return { t: "Raccolta", s: s.charAt(0).toUpperCase() + s.slice(1), d: "Portala fuori stasera." };
+    const EN = { carta: "paper", vetro: "glass", plastica: "plastic", umido: "organic", indifferenziata: "general waste" };
+    const list = it.block.chips.map(c => EN[c.toLowerCase()] || c.toLowerCase());
+    const s = list.length > 1 ? list.slice(0, -1).join(", ") + " and " + list[list.length - 1] : list[0];
+    return { t: "Recycling", s: s.charAt(0).toUpperCase() + s.slice(1), d: "Take it out tonight." };
   }
   return CARDS[it.text] || { t: it.text };
 }
@@ -611,8 +612,8 @@ function todayBlocks() {
 
 /* ============ RENDER ============ */
 
-const DAY_NAMES = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
-const MONTHS = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function taskEl(item) {
   const label = document.createElement("label");
@@ -854,11 +855,11 @@ function renderFocus(animate) {
   if (!next && pending.length) {
     const at = Math.min(...pending.map(startHourOf));
     card.classList.add("focus-done-all");
-    card.innerHTML = '<div class="focus-check">☕</div><div class="focus-text">Per ora niente da fare</div><div class="focus-ctx"></div>';
-    card.querySelector(".focus-ctx").textContent = "Le prossime cose compaiono alle " + hourLabel(at) + ".";
+    card.innerHTML = '<div class="focus-check">☕</div><div class="focus-text">Nothing to do right now</div><div class="focus-ctx"></div>';
+    card.querySelector(".focus-ctx").textContent = "Next tasks show up at " + hourLabel(at) + ".";
   } else if (!next) {
     card.classList.add("focus-done-all");
-    card.innerHTML = '<div class="focus-check">✓</div><div class="focus-text">Giornata chiusa</div><div class="focus-ctx">Niente altro da fare oggi.</div>';
+    card.innerHTML = '<div class="focus-check">✓</div><div class="focus-text">All done for today</div><div class="focus-ctx">Nothing else to do today.</div>';
   } else {
     const pos = items.indexOf(next) + 1;
     const ctx = document.createElement("div");
@@ -880,7 +881,7 @@ function renderFocus(animate) {
     if (photo) { card.classList.add("has-photo"); card.style.setProperty("--photo", "url('" + photo + "')"); }
     const sl = document.createElement("div");
     sl.className = "swipe-label";
-    sl.textContent = "Più tardi";
+    sl.textContent = "Later";
     card.appendChild(sl);
     attachHold(card, next);
   }
@@ -889,7 +890,7 @@ function renderFocus(animate) {
 
   const undo = document.createElement("button");
   undo.className = "focus-undo";
-  undo.textContent = "Annulla l'ultima";
+  undo.textContent = "Undo last";
   undo.hidden = !lastDone;
   undo.addEventListener("click", () => {
     if (!lastDone) return;
@@ -1010,7 +1011,7 @@ function postpone(item) {
   const maxSeq = Math.max(0, ...items.map(queueOrder));
   state.daily[ppKey(item)] = { h: nextHour != null ? nextHour : hourNow, s: maxSeq + 1 };
   state.updatedAt = Date.now(); save(); schedulePush();
-  toast(nextHour == null ? "In fondo alla lista" : nextHour >= EVENING_HOUR ? "Rimandata a stasera" : "Rimandata alle " + hourLabel(nextHour));
+  toast(nextHour == null ? "Moved to the end" : nextHour >= EVENING_HOUR ? "Moved to tonight" : "Moved to " + hourLabel(nextHour));
   renderFocus(true);
 }
 
@@ -1192,16 +1193,16 @@ async function getJson(path) {
   return { json: JSON.parse(unb64(j.content)), sha: j.sha };
 }
 function errText(e) {
-  if (e === 401) return "codice di accesso non valido o scaduto";
-  if (e === 403 || e === 404) return "nessun accesso all'archivio " + (sync ? sync.repo : "");
-  if (typeof e === "number") return "errore GitHub " + e;
-  return "nessuna connessione";
+  if (e === 401) return "access token invalid or expired";
+  if (e === 403 || e === 404) return "no access to repository " + (sync ? sync.repo : "");
+  if (typeof e === "number") return "GitHub error " + e;
+  return "no connection";
 }
 function setSyncNote(kind, e) {
   const el = document.getElementById("syncNote");
   if (!el) return;
   // Si vede solo se qualcosa non va.
-  el.textContent = (kind === "err" && sync) ? "Sincronizzazione non riuscita: " + errText(e) + ". Riprovo alla prossima modifica." : "";
+  el.textContent = (kind === "err" && sync) ? "Sync failed: " + errText(e) + ". Will retry on the next change." : "";
 }
 
 let stateSha = null, pushTimer = null, pushing = false;
@@ -1247,16 +1248,16 @@ function showSetup(msg) {
 document.getElementById("setupGo").addEventListener("click", async () => {
   const repo = document.getElementById("setupRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/+$/, "");
   const token = document.getElementById("setupToken").value.trim();
-  if (!repo || !token) { document.getElementById("setupMsg").textContent = "Inserisci archivio e codice di accesso."; return; }
+  if (!repo || !token) { document.getElementById("setupMsg").textContent = "Enter repository and access token."; return; }
   sync = { repo, token };
-  document.getElementById("setupMsg").textContent = "Controllo…";
+  document.getElementById("setupMsg").textContent = "Checking…";
   try {
     const p = await getJson("plan.json");
     if (!p.json) throw 404;
     localStorage.setItem(SYNC_KEY, JSON.stringify(sync));
     document.getElementById("setup").hidden = true;
     boot();
-  } catch (e) { sync = null; document.getElementById("setupMsg").textContent = "Non riesco a collegarmi: " + errText(e) + "."; }
+  } catch (e) { sync = null; document.getElementById("setupMsg").textContent = "Can't connect: " + errText(e) + "."; }
 });
 
 async function boot() {
@@ -1269,7 +1270,7 @@ async function boot() {
     else if (!WEEK) throw 404;
     await pullState();
   } catch (e) {
-    if (!WEEK) showSetup("Non riesco a caricare il piano: " + errText(e) + ".");
+    if (!WEEK) showSetup("Can't load the plan: " + errText(e) + ".");
     else setSyncNote("err", e);
   }
 }
@@ -1315,7 +1316,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
   function resetToday() {
     if (navigator.vibrate) navigator.vibrate(30);
     setTimeout(() => {
-      if (!confirm("Azzerare le task di oggi?")) return;
+      if (!confirm("Reset today's tasks?")) return;
       state.daily = {};
       todayBlocks().forEach(b => b.items.forEach(i => { if (i.scope === "weekly") delete state.weekly[i.id]; }));
       lastDone = null;
@@ -1334,7 +1335,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031153500";
+const APP_BUILD = "20261031155000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
@@ -1354,7 +1355,7 @@ window.onAppResume = function () {
   if (window.AndroidHaptics || /app=android/.test(location.search) || !sync) return;
   const a = document.createElement("a");
   a.className = "to-app";
-  a.textContent = "Collega l'app Android";
+  a.textContent = "Connect the Android app";
   a.href = "pianocasa://connect#" + encodeURIComponent(sync.token);
   document.body.appendChild(a);
 })();
