@@ -280,12 +280,11 @@ header .stats, header .bar, details.week, details.rules, .toolbar { display: non
 footer:has(#syncNote:empty) { display: none; }
 
 /* ---------- Card a tutta altezza, stesso spazio sopra e sotto ---------- */
-:root { --pad-top: max(32px, calc(env(safe-area-inset-top) + 16px)); --pad-bot: env(safe-area-inset-bottom, 0px); --gap: 9vh; }
-body { padding-top: var(--pad-top) !important; padding-bottom: var(--pad-bot) !important; }
-.wrap { display: flex; flex-direction: column; min-height: calc(100dvh - var(--pad-top) - var(--pad-bot)); }
+:root { --gap: 9vh; }
+body { padding-top: 26px !important; padding-bottom: 0 !important; }
 header { margin-bottom: 0 !important; }
-#todayCard { flex: 1; display: flex; flex-direction: column; margin: var(--gap) 0; position: relative; }
-.focus { flex: 1; margin-top: 0 !important; display: flex; flex-direction: column; }
+#todayCard { display: flex; flex-direction: column; margin-top: var(--gap); position: relative; }
+.focus { margin-top: 0 !important; display: flex; flex-direction: column; min-height: 220px; box-sizing: border-box; }
 .focus .focus-btn { margin-top: auto; }
 .focus.focus-done-all { justify-content: center; }
 .focus-undo { position: absolute; top: 100%; left: 0; right: 0; }
@@ -773,6 +772,7 @@ function renderFocus(animate) {
     card.appendChild(btn);
   }
   host.appendChild(card);
+  requestAnimationFrame(fitCard);
 
   const undo = document.createElement("button");
   undo.className = "focus-undo";
@@ -955,6 +955,20 @@ setInterval(() => {
   const h = new Date().getHours();
   if (h !== shownHour) { shownHour = h; const fresh = load(); if (fresh.day !== state.day) state = fresh; render(); }
 }, 30000);
+// Altezza della card: sotto lo stesso spazio che c'è tra la data e la card, misurato sullo schermo vero.
+function fitCard() {
+  const card = document.querySelector(".focus");
+  const row = document.querySelector(".title-row");
+  if (!card || !row) return;
+  card.style.height = "";
+  const top = document.getElementById("todayCard").getBoundingClientRect().top + window.scrollY; // il contenitore non si anima
+  const gap = top - (row.getBoundingClientRect().bottom + window.scrollY);
+  const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight) - top - gap;
+  card.style.height = Math.max(220, Math.round(h)) + "px";
+}
+window.addEventListener("resize", fitCard);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitCard);
+document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 boot();
 
 // Se la pagina resta aperta oltre la mezzanotte, ricarica lo stato al ritorno.
