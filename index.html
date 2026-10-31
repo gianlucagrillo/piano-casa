@@ -411,7 +411,11 @@ html.cards-v2 .focus.has-photo .swipe-label { top: 26%; }
 #todayCard .focus.depth-2 { z-index: 1; transform: translateY(-26px) scale(.90); filter: brightness(.6); }
 #todayCard .focus.promote { animation: promote .32s cubic-bezier(.2,.8,.3,1) both; transform-origin: 50% 0; }
 @keyframes promote { from { transform: translateY(-14px) scale(.95); filter: brightness(.8); } to { transform: none; filter: none; } }
-#todayCard .focus-undo { position: absolute; left: 0; right: 0; top: 100%; z-index: 4; }</style>
+#todayCard .focus-undo { position: absolute; left: 0; right: 0; top: 100%; z-index: 4; }
+/* ---------- Trascinamento fluido e messaggio finale ---------- */
+#todayCard .focus.front { will-change: transform; }
+.relax { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-size: 1.6rem; font-weight: 600; color: rgba(233,243,239,.55); letter-spacing: .01em; animation: relaxIn .8s ease .2s both; }
+@keyframes relaxIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }</style>
 </head>
 <body>
 <div class="wrap">
@@ -915,6 +919,12 @@ function renderFocus(animate) {
     host.appendChild(card);
     attachHold(card, next);
   }
+  if (!next) {
+    const relax = document.createElement("div");
+    relax.className = "relax";
+    relax.textContent = "You can relax now";
+    host.appendChild(relax);
+  }
   requestAnimationFrame(fitCard);
 
   const undo = document.createElement("button");
@@ -935,7 +945,7 @@ function renderFocus(animate) {
 const HOLD_MS = 700;
 
 function attachHold(card, item) {
-  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, x0 = 0, y0 = 0, done = false, down = false, swiping = false, startT = null, lastDx = 0, lastDy = 0, lastT = 0;
+  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, x0 = 0, y0 = 0, done = false, down = false, swiping = false, startT = null, lastDx = 0, lastDy = 0, lastT = 0, grab = 1, swRaf = 0, tf2 = "";
   const R = () => Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
   card.addEventListener("contextmenu", e => e.preventDefault());
 
@@ -977,6 +987,8 @@ function attachHold(card, item) {
     if (done || ov) return;
     down = true; swiping = false;
     x = x0 = e.clientX; y = y0 = e.clientY;
+    const r0 = card.getBoundingClientRect();
+    grab = Math.max(-1, Math.min(1, (r0.top + r0.height / 2 - y0) / (r0.height / 2)));
     try { card.setPointerCapture(e.pointerId); } catch (_) {}
     // Il riempimento parte solo se il dito resta fermo: così uno swipe non lo fa partire.
     startT = setTimeout(startHold, 120);
@@ -991,9 +1003,10 @@ function attachHold(card, item) {
     }
     if (swiping) {
       // Movimento libero: la card segue il dito in ogni direzione e ruota come se la tenessi per quel punto.
-      const r = card.getBoundingClientRect();
-      const grabAbove = y0 < r.top + r.height / 2 ? 1 : -1;
-      card.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + (grabAbove * dx / 18) + "deg)";
+      // Rotazione continua: dipende da dove hai preso la card (calcolato una volta sola al tocco).
+      const tf = "translate(" + dx + "px," + dy + "px) rotate(" + (grab * dx / 18) + "deg)";
+      if (!swRaf) swRaf = requestAnimationFrame(() => { swRaf = 0; card.style.transform = tf2; });
+      tf2 = tf;
       lastDx = dx; lastDy = dy; lastT = performance.now();
       const lbl = card.querySelector(".swipe-label");
       if (lbl) lbl.style.opacity = Math.min(1, Math.hypot(dx, dy) / (innerWidth * 0.35));
@@ -1007,13 +1020,14 @@ function attachHold(card, item) {
     const dx = (e && e.clientX != null ? e.clientX : x0) - x0;
     const dy = (e && e.clientY != null ? e.clientY : y0) - y0;
     card.classList.remove("swiping");
+    if (swRaf) { cancelAnimationFrame(swRaf); swRaf = 0; }
     const dist = Math.hypot(dx, dy);
     if (dist > innerWidth * 0.35) {
       done = true;
       // Vola via nella direzione in cui l'hai lanciata.
       const k = (Math.max(innerWidth, innerHeight) * 1.4) / dist;
       card.style.transition = "transform .3s ease-in, opacity .3s ease-in";
-      card.style.transform = "translate(" + dx * k + "px," + dy * k + "px) rotate(" + (dx / 6) + "deg)";
+      card.style.transform = "translate(" + dx * k + "px," + dy * k + "px) rotate(" + (grab * dx / 6) + "deg)";
       card.style.opacity = "0";
       if (window.AndroidHaptics) AndroidHaptics.tick(); else if (navigator.vibrate) navigator.vibrate(15);
       setTimeout(() => postpone(item), 260);
@@ -1363,7 +1377,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031165000";
+const APP_BUILD = "20261031165500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
