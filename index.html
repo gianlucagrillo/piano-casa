@@ -895,7 +895,7 @@ function renderFocus(animate) {
 const HOLD_MS = 700;
 
 function attachHold(card, item) {
-  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, x0 = 0, y0 = 0, done = false, down = false, swiping = false, startT = null;
+  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, x0 = 0, y0 = 0, done = false, down = false, swiping = false, startT = null, lastDx = 0, lastDy = 0, lastT = 0;
   const R = () => Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
   card.addEventListener("contextmenu", e => e.preventDefault());
 
@@ -945,14 +945,18 @@ function attachHold(card, item) {
   card.addEventListener("pointermove", e => {
     if (!down || done) return;
     const dx = e.clientX - x0, dy = e.clientY - y0;
-    if (!swiping && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+    if (!swiping && Math.hypot(dx, dy) > 12) {
       swiping = true; stopHold();
       card.classList.add("swiping");
     }
     if (swiping) {
-      card.style.transform = "translateX(" + dx + "px) rotate(" + (dx / 22) + "deg)";
+      // Movimento libero: la card segue il dito in ogni direzione e ruota come se la tenessi per quel punto.
+      const r = card.getBoundingClientRect();
+      const grabAbove = y0 < r.top + r.height / 2 ? 1 : -1;
+      card.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + (grabAbove * dx / 18) + "deg)";
+      lastDx = dx; lastDy = dy; lastT = performance.now();
       const lbl = card.querySelector(".swipe-label");
-      if (lbl) lbl.style.opacity = Math.min(1, Math.abs(dx) / (innerWidth * 0.3));
+      if (lbl) lbl.style.opacity = Math.min(1, Math.hypot(dx, dy) / (innerWidth * 0.35));
     }
   });
 
@@ -961,12 +965,15 @@ function attachHold(card, item) {
     down = false;
     if (!swiping) { stopHold(); return; }
     const dx = (e && e.clientX != null ? e.clientX : x0) - x0;
+    const dy = (e && e.clientY != null ? e.clientY : y0) - y0;
     card.classList.remove("swiping");
-    if (Math.abs(dx) > innerWidth * 0.3) {
+    const dist = Math.hypot(dx, dy);
+    if (dist > innerWidth * 0.35) {
       done = true;
-      const dir = dx > 0 ? 1 : -1;
-      card.style.transition = "transform .28s ease-in, opacity .28s ease-in";
-      card.style.transform = "translateX(" + dir * innerWidth * 1.3 + "px) rotate(" + dir * 18 + "deg)";
+      // Vola via nella direzione in cui l'hai lanciata.
+      const k = (Math.max(innerWidth, innerHeight) * 1.4) / dist;
+      card.style.transition = "transform .3s ease-in, opacity .3s ease-in";
+      card.style.transform = "translate(" + dx * k + "px," + dy * k + "px) rotate(" + (dx / 6) + "deg)";
       card.style.opacity = "0";
       if (window.AndroidHaptics) AndroidHaptics.tick(); else if (navigator.vibrate) navigator.vibrate(15);
       setTimeout(() => postpone(item), 260);
@@ -1315,7 +1322,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031150000";
+const APP_BUILD = "20261031150500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
