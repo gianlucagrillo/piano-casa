@@ -415,7 +415,14 @@ html.cards-v2 .focus.has-photo .swipe-label { top: 26%; }
 /* ---------- Trascinamento fluido e messaggio finale ---------- */
 #todayCard .focus.front { will-change: transform; }
 .relax { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-size: 1.6rem; font-weight: 600; color: rgba(233,243,239,.55); letter-spacing: .01em; animation: relaxIn .8s ease .2s both; }
-@keyframes relaxIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }</style>
+@keyframes relaxIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* ---------- Istruzioni passo passo ---------- */
+.focus-steps { margin: 12px 22px 0; padding: 0; list-style: none; counter-reset: st; }
+.focus-steps li { counter-increment: st; position: relative; padding-left: 30px; margin: 0 0 7px; font-size: .93rem; line-height: 1.35; color: #4a4f57; }
+.focus-steps li::before { content: counter(st); position: absolute; left: 0; top: 0; width: 21px; height: 21px; border-radius: 50%; background: var(--g-400); color: #fff; font-size: .72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+html.cards-v2 .focus.has-photo.has-steps::before { flex-basis: 40%; }
+html.cards-v2 .focus.has-photo.has-steps .focus-text { margin-top: 18px !important; font-size: 1.7rem; }
+.focus:not(.has-photo) .focus-steps li { color: rgba(255,255,255,.85); }</style>
 </head>
 <body>
 <div class="wrap">
@@ -493,7 +500,7 @@ function cardInfo(it) {
     const EN = { carta: "paper", vetro: "glass", plastica: "plastic", umido: "organic", indifferenziata: "general waste" };
     const list = it.block.chips.map(c => EN[c.toLowerCase()] || c.toLowerCase());
     const s = list.length > 1 ? list.slice(0, -1).join(", ") + " and " + list[list.length - 1] : list[0];
-    return { t: "Recycling", s: s.charAt(0).toUpperCase() + s.slice(1), d: "Take it out tonight." };
+    return { t: "Recycling", s: s.charAt(0).toUpperCase() + s.slice(1), steps: ["Close the bags.", "Take them to the bins outside."] };
   }
   return CARDS[it.text] || { t: it.text };
 }
@@ -883,6 +890,13 @@ function buildCard(it, total, doneCount) {
   card.append(prog, txt);
   if (info.s) { const s = document.createElement("div"); s.className = "focus-sub"; s.textContent = info.s; card.appendChild(s); }
   if (info.d) { const d = document.createElement("div"); d.className = "focus-desc"; d.textContent = info.d; card.appendChild(d); }
+  if (info.steps && info.steps.length) {
+    const ol = document.createElement("ol");
+    ol.className = "focus-steps";
+    info.steps.forEach(s => { const li = document.createElement("li"); li.textContent = s; ol.appendChild(li); });
+    card.appendChild(ol);
+    card.classList.add("has-steps");
+  }
   const photo = photoFor(it);
   if (photo) { card.classList.add("has-photo"); card.style.setProperty("--photo", "url('" + photo + "')"); }
   return card;
@@ -1377,7 +1391,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031165500";
+const APP_BUILD = "20261031170500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
