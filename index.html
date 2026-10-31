@@ -377,7 +377,12 @@ html { overflow: hidden; overscroll-behavior: none; }
 body { overflow: visible !important; }
 
 .build-tag { position: fixed; right: 28px; bottom: 10px; font-size: 10px; color: rgba(233,243,239,.35); z-index: 1; pointer-events: none; }
-</style>
+
+/* ---------- Titolo, sottotitolo, descrizione ---------- */
+.focus.has-photo .focus-text { margin-bottom: 4px !important; }
+.focus-sub { font-size: 1.1rem; font-weight: 600; color: rgba(255,255,255,.88); text-shadow: 0 2px 10px rgba(0,0,0,.45); line-height: 1.3; }
+.focus-desc { margin-top: 8px; font-size: .92rem; color: rgba(255,255,255,.72); line-height: 1.4; text-shadow: 0 2px 10px rgba(0,0,0,.45); }
+.focus.has-photo > :last-of-type { margin-bottom: 6px; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -448,10 +453,19 @@ body { overflow: visible !important; }
 <script>
 /* ============ DATI (letti da GitHub) ============ */
 
-let ROUTINE, WEEK, MONTHLY, BIWEEKLY, WASTE, BEARD;
+let ROUTINE, WEEK, MONTHLY, BIWEEKLY, WASTE, BEARD, CARDS = {};
+// Titolo essenziale, sottotitolo e descrizione della card (dal piano); se manca, il testo della task.
+function cardInfo(it) {
+  if (it.block.chips) {
+    const list = it.block.chips.map(c => c.toLowerCase());
+    const s = list.length > 1 ? list.slice(0, -1).join(", ") + " e " + list[list.length - 1] : list[0];
+    return { t: "Raccolta", s: s.charAt(0).toUpperCase() + s.slice(1), d: "Portala fuori stasera." };
+  }
+  return CARDS[it.text] || { t: it.text };
+}
 function parseDay(s) { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
 function applyPlan(p) {
-  ROUTINE = p.ROUTINE; WEEK = p.WEEK; MONTHLY = p.MONTHLY; BIWEEKLY = p.BIWEEKLY; WASTE = p.WASTE;
+  ROUTINE = p.ROUTINE; WEEK = p.WEEK; MONTHLY = p.MONTHLY; BIWEEKLY = p.BIWEEKLY; WASTE = p.WASTE; CARDS = p.CARDS || {};
   BEARD = Object.assign({}, p.BEARD, { start: parseDay(p.BEARD.start), rollerStart: parseDay(p.BEARD.rollerStart) });
 }
 
@@ -846,28 +860,20 @@ function renderFocus(animate) {
     const ctx = document.createElement("div");
     ctx.className = "focus-ctx";
     ctx.textContent = next.block.title + " · " + pos + " di " + total;
+    const info = cardInfo(next);
     const txt = document.createElement("div");
     txt.className = "focus-text";
-    txt.textContent = next.block.chips ? "Porta fuori la raccolta" : next.text;
+    txt.textContent = info.t;
     const prog = document.createElement("div");
     prog.className = "focus-progress";
     const fill = document.createElement("i");
     fill.style.width = ((total - pending.length) / total * 100) + "%";
     prog.appendChild(fill);
     card.append(prog, txt);
+    if (info.s) { const s = document.createElement("div"); s.className = "focus-sub"; s.textContent = info.s; card.appendChild(s); }
+    if (info.d) { const d = document.createElement("div"); d.className = "focus-desc"; d.textContent = info.d; card.appendChild(d); }
     const photo = photoFor(next);
     if (photo) { card.classList.add("has-photo"); card.style.setProperty("--photo", "url('" + photo + "')"); }
-    if (next.block.chips) {
-      const chips = document.createElement("div");
-      chips.className = "waste-chips";
-      next.block.chips.forEach(c => {
-        const el = document.createElement("span");
-        el.className = "waste-chip w-" + c.toLowerCase();
-        el.textContent = c;
-        chips.appendChild(el);
-      });
-      card.appendChild(chips);
-    }
     const sl = document.createElement("div");
     sl.className = "swipe-label";
     sl.textContent = "Più tardi";
@@ -1323,7 +1329,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031151600";
+const APP_BUILD = "20261031152000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
