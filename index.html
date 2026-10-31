@@ -321,7 +321,18 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 .focus-done-all .focus-check { color: var(--g-100); }
 .focus.win { animation-name: winGlowG; }
 @keyframes winGlowG { 0% { box-shadow: 0 0 0 0 rgba(159,217,200,.5); } 100% { box-shadow: 0 0 0 26px rgba(159,217,200,0); } }
-#dayChip { color: var(--cp-text); }</style>
+#dayChip { color: var(--cp-text); }
+/* ---------- Card con foto di sfondo ---------- */
+.focus.has-photo {
+  background:
+    linear-gradient(180deg, rgba(4,32,26,.55) 0%, rgba(4,32,26,.05) 22%, rgba(4,32,26,.10) 45%, rgba(3,45,37,.88) 78%, rgba(3,45,37,.97) 100%),
+    var(--photo) center / cover no-repeat,
+    var(--g-700);
+  border-color: rgba(255,255,255,.10);
+}
+.focus.has-photo .focus-text { margin-top: auto; margin-bottom: 18px; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
+.focus.has-photo .focus-btn { margin-top: 0; }
+.focus.has-photo .focus-praise { bottom: auto; top: 42%; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.5); }</style>
 </head>
 <body>
 <div class="wrap">
@@ -792,6 +803,8 @@ function renderFocus(animate) {
     fill.style.width = ((total - pending.length) / total * 100) + "%";
     prog.appendChild(fill);
     card.append(prog, txt);
+    const photo = photoFor(next);
+    if (photo) { card.classList.add("has-photo"); card.style.setProperty("--photo", "url('" + photo + "')"); }
     if (next.block.chips) {
       const chips = document.createElement("div");
       chips.className = "waste-chips";
@@ -863,6 +876,17 @@ function completeFocus(item, card) {
 }
 
 /* ---------- Ricompense: frasi, suono, coriandoli ---------- */
+
+// Foto di sfondo della card (Unsplash), scelte in base al testo della task.
+const PHOTOS = [
+  [/ciotole gatti: acqua/i, "img/gatti-ciotole.jpg"],
+  [/rifai il letto/i, "img/letto.jpg"],
+  [/minoxidil|dermaroller|barba/i, "img/barba.jpg"]
+];
+function photoFor(item) {
+  const hit = PHOTOS.find(([re]) => re.test(item.text) || re.test(item.block.title));
+  return hit ? hit[1] : null;
+}
 
 const PRAISE = ["Fatto!", "Una in meno", "Bene così", "Avanti", "Ottimo", "Vai così", "Perfetto", "Spuntata"];
 const PRAISE_BLOCK = ["Blocco chiuso!", "Pezzo finito!", "Anche questo è fatto!"];
