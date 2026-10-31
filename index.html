@@ -18,7 +18,7 @@
     const theme =
       param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.setAttribute("data-theme", theme);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#3d3b3a" : "#f7f4ef");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#04201a");
   })();
 </script>
 <style>
@@ -302,7 +302,26 @@ footer { position: fixed; left: 0; right: 0; bottom: calc(var(--pad-bot) + 8px);
 .focus-praise { position: absolute; left: 0; right: 0; bottom: 104px; text-align: center; font-size: 1.5rem; font-weight: 700; color: #16a34a; animation: praiseUp .7s cubic-bezier(.2,1.4,.4,1) both; pointer-events: none; }
 @keyframes praiseUp { 0% { opacity: 0; transform: translateY(16px) scale(.8); } 100% { opacity: 1; transform: none; } }
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 99; }
-@media (prefers-reduced-motion: reduce) { .focus-btn.ok, .focus.win, .focus-praise { animation: none; } }</style>
+@media (prefers-reduced-motion: reduce) { .focus-btn.ok, .focus.win, .focus-praise { animation: none; } }
+/* ---------- Palette: Burnham Stone e verdi (Luxury Gradients) ---------- */
+html, html[data-theme="dark"], html[data-theme="light"] {
+  color-scheme: dark;
+  --g-900: #04201a; --g-800: #032d25; --g-700: #023d33; --g-600: #01574b; --g-500: #005b4f; --g-400: #146c60; --g-300: #1a8a78; --g-100: #9fd9c8;
+  --cp-bg: var(--g-900); --cp-surface: var(--g-800); --cp-surface-soft: var(--g-700);
+  --cp-text: #e9f3ef; --cp-text-muted: #a7c4bb; --cp-text-soft: #86a99e;
+  --cp-border: rgba(255,255,255,.08); --cp-accent: var(--g-400); --cp-accent-fg: #ffffff;
+}
+body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-900) 60%) fixed, var(--g-900); }
+.focus { background: linear-gradient(160deg, var(--g-600) 0%, var(--g-700) 55%, var(--g-800) 100%); border: 1px solid rgba(255,255,255,.07); box-shadow: 0 18px 40px rgba(0,0,0,.35); }
+.focus-btn { background: linear-gradient(135deg, var(--g-300), var(--g-400)); color: #fff; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+.focus-btn.ok { background: linear-gradient(135deg, #2fb394, var(--g-300)) !important; }
+.focus-progress { background: rgba(255,255,255,.12); }
+.focus-progress i { background: linear-gradient(90deg, var(--g-300), var(--g-100)); }
+.focus-praise { color: var(--g-100); }
+.focus-done-all .focus-check { color: var(--g-100); }
+.focus.win { animation-name: winGlowG; }
+@keyframes winGlowG { 0% { box-shadow: 0 0 0 0 rgba(159,217,200,.5); } 100% { box-shadow: 0 0 0 26px rgba(159,217,200,0); } }
+#dayChip { color: var(--cp-text); }</style>
 </head>
 <body>
 <div class="wrap">
@@ -876,7 +895,7 @@ function confetti() {
   cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
   document.body.appendChild(cv);
   const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
-  const colors = ["#ff8fa3", "#ffd166", "#06d6a0", "#4cc9f0", "#c77dff", "#ffffff"];
+  const colors = ["#9fd9c8", "#1a8a78", "#146c60", "#e9f3ef", "#d9c58f", "#01574b"];
   const parts = Array.from({ length: 140 }, () => ({
     x: innerWidth / 2, y: innerHeight * 0.45,
     vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
