@@ -364,7 +364,9 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 .hold-ov.show-praise { clip-path: none !important; background: transparent; }
 .hold-ov.show-praise::before { content: ""; position: absolute; left: 50%; top: var(--cy); width: 112px; height: 112px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #2fb394, var(--g-400)); box-shadow: 0 0 0 0 rgba(159,217,200,.5); animation: ring .7s ease-out; }
 .hold-ov.show-praise .hold-praise { opacity: 1; transform: none; text-shadow: 0 2px 12px rgba(0,0,0,.4); }
-@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(159,217,200,.55); } 100% { box-shadow: 0 0 0 40px rgba(159,217,200,0); } }</style>
+@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(159,217,200,.55); } 100% { box-shadow: 0 0 0 40px rgba(159,217,200,0); } }
+.to-app { position: fixed; left: 0; right: 0; bottom: 14px; text-align: center; color: var(--g-100); font-size: .85rem; text-decoration: underline; z-index: 5; }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -890,7 +892,8 @@ function attachHold(card, item) {
     document.body.appendChild(ov);
     card.classList.add("pressing");
     // Vibrazione che cresce: impulsi sempre più lunghi e ravvicinati fino al completamento.
-    if (navigator.vibrate) navigator.vibrate([4, 70, 6, 55, 9, 42, 13, 32, 18, 24, 24, 16, 32, 10, 42, 6, 55]);
+    if (window.AndroidHaptics) AndroidHaptics.ramp(HOLD_MS);
+    else if (navigator.vibrate) navigator.vibrate([4, 70, 6, 55, 9, 42, 13, 32, 18, 24, 24, 16, 32, 10, 42, 6, 55]);
     t0 = performance.now();
     const tick = now => {
       const p = Math.min(1, (now - t0) / HOLD_MS);
@@ -904,7 +907,7 @@ function attachHold(card, item) {
   const cancel = () => {
     if (done || !ov) return;
     cancelAnimationFrame(raf);
-    if (navigator.vibrate) navigator.vibrate(0);
+    if (window.AndroidHaptics) AndroidHaptics.cancel(); else if (navigator.vibrate) navigator.vibrate(0);
     card.classList.remove("pressing");
     const o = ov; ov = null;
     o.style.transition = "clip-path .25s ease";
@@ -923,7 +926,8 @@ function finishHold(ov, item, card) {
 
   ov.style.clipPath = "none";
   ov.classList.add("drawn");
-  if (navigator.vibrate) navigator.vibrate(dayDone ? [90, 60, 40, 40, 60] : blockDone ? [80, 50, 40] : 80);
+  if (window.AndroidHaptics) AndroidHaptics.hit(dayDone ? 3 : blockDone ? 2 : 1);
+  else if (navigator.vibrate) navigator.vibrate(dayDone ? [90, 60, 40, 40, 60] : blockDone ? [80, 50, 40] : 80);
   chime(dayDone ? 3 : blockDone ? 2 : 1);
 
   // Il verde si raccoglie in un cerchio con la spunta, poi esplodono i coriandoli.
@@ -1049,6 +1053,13 @@ function readSync() {
   } catch (e) {}
   return null;
 }
+// L'app Android riceve il codice di accesso dalla versione Chrome con il link "Collega l'app Android".
+(function () {
+  const m = location.hash.match(/^#connect=([^&]+)/);
+  if (!m) return;
+  try { localStorage.setItem(SYNC_KEY, JSON.stringify({ repo: "gianlucagrillo/gymlog-data", token: decodeURIComponent(m[1]) })); } catch (e) {}
+  history.replaceState(null, "", location.pathname + location.search);
+})();
 let sync = readSync();
 
 function b64(str) {
@@ -1165,7 +1176,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 (function () {
   // Se il telefono ha già aperto l'app a schermo intero non serve: chiederlo di nuovo fa comparire l'avviso in basso.
   const standaloneOnly = window.matchMedia("(display-mode: standalone)").matches && !window.matchMedia("(display-mode: fullscreen)").matches;
-  if (!standaloneOnly || !document.documentElement.requestFullscreen) return;
+  if (window.AndroidHaptics || !standaloneOnly || !document.documentElement.requestFullscreen) return;
   const go = () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
   };
@@ -1214,6 +1225,21 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
   row.addEventListener("touchstart", () => { clearTimeout(hold); hold = setTimeout(() => { taps = []; resetToday(); }, 1000); }, { passive: true });
   ["touchend", "touchmove", "touchcancel"].forEach(ev => row.addEventListener(ev, () => clearTimeout(hold), { passive: true }));
   row.addEventListener("contextmenu", e => e.preventDefault());
+})();
+// Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
+window.onAppResume = function () {
+  const fresh = load();
+  if (fresh.day !== state.day || fresh.week !== state.week) { state = fresh; save(); }
+  render(); pullState();
+};
+// Nella versione Chrome: link per passare il codice di accesso all'app Android (una volta sola).
+(function () {
+  if (window.AndroidHaptics || /app=android/.test(location.search) || !sync) return;
+  const a = document.createElement("a");
+  a.className = "to-app";
+  a.textContent = "Collega l'app Android";
+  a.href = "pianocasa://connect#" + encodeURIComponent(sync.token);
+  document.body.appendChild(a);
 })();
 boot();
 
