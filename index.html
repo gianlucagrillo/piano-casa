@@ -287,7 +287,9 @@ header { margin-bottom: 0 !important; }
 .focus .focus-btn { margin-top: auto; }
 .focus.focus-done-all { justify-content: center; }
 .focus-undo { position: absolute; top: 100%; left: 0; right: 0; }
-footer { position: fixed; left: 0; right: 0; bottom: calc(var(--pad-bot) + 8px); text-align: center; }</style>
+footer { position: fixed; left: 0; right: 0; bottom: calc(var(--pad-bot) + 8px); text-align: center; }
+.focus:not(.focus-done-all) .focus-text { font-size: 2rem; line-height: 1.2; margin: 0 0 22px; }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -752,7 +754,7 @@ function renderFocus(animate) {
     const txt = document.createElement("div");
     txt.className = "focus-text";
     txt.textContent = next.block.chips ? "Porta fuori la raccolta" : next.text;
-    card.append(ctx, txt);
+    card.append(txt);
     if (next.block.chips) {
       const chips = document.createElement("div");
       chips.className = "waste-chips";
