@@ -879,13 +879,19 @@ function completeFocus(item, card) {
 
 // Foto di sfondo della card (Unsplash), scelte in base al testo della task.
 const PHOTOS = [
-  [/ciotole gatti: acqua/i, "img/gatti-ciotole.jpg"],
-  [/rifai il letto/i, "img/letto.jpg"],
-  [/minoxidil|dermaroller|barba/i, "img/barba.jpg"]
+  [/ciotole gatti: acqua/i, "gatti-ciotole"], [/rifai il letto/i, "letto"], [/minoxidil|dermaroller|barba/i, "barba"],
+  [/piatti/i, "piatti"], [/giro di 3 minuti/i, "riordino"], [/pranzo/i, "pranzo"], [/colazione/i, "colazione"],
+  [/wc e lavandino/i, "wc-lavandino"], [/specchio e rubinetteria/i, "specchio"], [/spazzola i gatti/i, "gatti-spazzola"],
+  [/aspira soggiorno/i, "aspirapolvere"], [/lettiera/i, "lettiera"], [/ciotole gatti lavate/i, "ciotole-lavare"],
+  [/spesa/i, "spesa"], [/pavimenti/i, "pavimenti"], [/asciugamani/i, "asciugamani"], [/doccia/i, "doccia"],
+  [/scarichi/i, "scarichi"], [/sanitari/i, "sanitari"], [/sotto il letto/i, "sotto-letto"], [/comodini/i, "comodino"],
+  [/armadio/i, "armadio"], [/frigo/i, "frigo"], [/dispensa/i, "dispensa"], [/forno/i, "forno"],
+  [/polvere su tutte/i, "polvere"], [/battiscopa/i, "battiscopa"], [/vetri e specchi/i, "vetri"],
+  [/lenzuola/i, "lenzuola"], [/raccolta/i, "raccolta"]
 ];
 function photoFor(item) {
   const hit = PHOTOS.find(([re]) => re.test(item.text) || re.test(item.block.title));
-  return hit ? hit[1] : null;
+  return hit ? "img/" + hit[1] + ".jpg" : null;
 }
 
 const PRAISE = ["Fatto!", "Una in meno", "Bene così", "Avanti", "Ottimo", "Vai così", "Perfetto", "Spuntata"];
