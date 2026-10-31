@@ -422,7 +422,13 @@ html.cards-v2 .focus.has-photo .swipe-label { top: 26%; }
 .focus-steps li::before { content: counter(st); position: absolute; left: 0; top: 0; width: 21px; height: 21px; border-radius: 50%; background: var(--g-400); color: #fff; font-size: .72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 html.cards-v2 .focus.has-photo.has-steps::before { flex-basis: 40%; }
 html.cards-v2 .focus.has-photo.has-steps .focus-text { margin-top: 18px !important; font-size: 1.7rem; }
-.focus:not(.has-photo) .focus-steps li { color: rgba(255,255,255,.85); }</style>
+.focus:not(.has-photo) .focus-steps li { color: rgba(255,255,255,.85); }
+/* ---------- Passi senza cerchietti; la foto occupa tutto lo spazio libero ---------- */
+html.cards-v2 .focus.has-photo::before, html.cards-v2 .focus.has-photo.has-steps::before { flex: 1 1 0 !important; min-height: 38%; }
+html.cards-v2 .focus.has-photo { padding-bottom: 20px !important; }
+html.cards-v2 .focus.has-photo .focus-text { margin-top: 18px !important; }
+.focus-steps li { padding-left: 18px !important; margin-bottom: 4px !important; }
+.focus-steps li::before { content: counter(st) "." !important; background: none !important; width: auto !important; height: auto !important; border-radius: 0 !important; color: var(--g-400) !important; font-size: .93rem !important; font-weight: 700 !important; display: inline !important; line-height: 1.35; }</style>
 </head>
 <body>
 <div class="wrap">
@@ -1391,7 +1397,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031170500";
+const APP_BUILD = "20261031171000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
