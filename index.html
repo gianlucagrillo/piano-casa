@@ -89,7 +89,7 @@ body {
 
 /* ---------- Header ---------- */
 header { margin-bottom: 22px; }
-.title-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: 100px; align-items: baseline; }
+.title-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: 64px; align-items: baseline; }
 #dayChip { text-align: right; }
 #dateChip { text-align: left; }
 h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
@@ -278,7 +278,18 @@ header .stats, header .bar, details.week, details.rules, .toolbar { display: non
 .focus-undo { display: block; margin: 14px auto 0; background: none; border: none; color: var(--cp-text-muted); font-size: .85rem; text-decoration: underline; cursor: pointer; }
 .focus-undo[hidden] { display: none; }
 footer:has(#syncNote:empty) { display: none; }
-</style>
+
+/* ---------- Card a tutta altezza, stesso spazio sopra e sotto ---------- */
+:root { --pad-top: max(32px, calc(env(safe-area-inset-top) + 16px)); --pad-bot: env(safe-area-inset-bottom, 0px); --gap: 9vh; }
+body { padding-top: var(--pad-top) !important; padding-bottom: var(--pad-bot) !important; }
+.wrap { display: flex; flex-direction: column; min-height: calc(100dvh - var(--pad-top) - var(--pad-bot)); }
+header { margin-bottom: 0 !important; }
+#todayCard { flex: 1; display: flex; flex-direction: column; margin: var(--gap) 0; position: relative; }
+.focus { flex: 1; margin-top: 0 !important; display: flex; flex-direction: column; }
+.focus .focus-btn { margin-top: auto; }
+.focus.focus-done-all { justify-content: center; }
+.focus-undo { position: absolute; top: 100%; left: 0; right: 0; }
+footer { position: fixed; left: 0; right: 0; bottom: calc(var(--pad-bot) + 8px); text-align: center; }</style>
 </head>
 <body>
 <div class="wrap">
