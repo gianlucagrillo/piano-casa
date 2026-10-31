@@ -1092,7 +1092,7 @@ const PHOTOS = [
 ];
 function photoFor(item) {
   const hit = PHOTOS.find(([re]) => re.test(item.text) || re.test(item.block.title));
-  return hit ? "img/" + hit[1] + ".jpg" : null;
+  return hit ? "img-c/" + hit[1] + ".jpg" : null;
 }
 
 const PRAISE = ["Fatto!", "Una in meno", "Bene così", "Avanti", "Ottimo", "Vai così", "Perfetto", "Spuntata"];
@@ -1349,7 +1349,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031162200";
+const APP_BUILD = "20261031162800";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();

@@ -1,4 +1,4 @@
-const CACHE = "piano-casa-v8";
+const CACHE = "piano-casa-v9";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
@@ -10,7 +10,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const u = new URL(e.request.url);
   if (u.origin !== location.origin || e.request.method !== "GET") return;
-  const isPhoto = u.pathname.includes("/img/");
+  const isPhoto = u.pathname.includes("/img-c/");
   e.respondWith(
     fetch(e.request, isPhoto ? {} : { cache: "no-store" })
       .then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); return r; })
