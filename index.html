@@ -376,7 +376,7 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
 html { overflow: hidden; overscroll-behavior: none; }
 body { overflow: visible !important; }
 
-.build-tag { position: fixed; right: 10px; bottom: 6px; font-size: 10px; color: rgba(233,243,239,.35); z-index: 1; pointer-events: none; }
+.build-tag { position: fixed; right: 28px; bottom: 10px; font-size: 10px; color: rgba(233,243,239,.35); z-index: 1; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -1327,7 +1327,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031151200";
+const APP_BUILD = "20261031151400";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
