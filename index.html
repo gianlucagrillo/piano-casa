@@ -89,8 +89,8 @@ body {
 
 /* ---------- Header ---------- */
 header { margin-bottom: 22px; }
-.title-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: 0; align-items: baseline; width: 100vw; margin-left: calc(50% - 50vw); }
-#dayChip, #dateChip { text-align: center; }
+.title-row { display: flex; align-items: baseline; gap: 8px; padding-left: 4px; }
+#dayChip { color: var(--cp-text); }
 h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
 .date-chip {
   font-size: 0.85rem; font-weight: 600; color: var(--cp-text-muted);
@@ -280,7 +280,7 @@ footer:has(#syncNote:empty) { display: none; }
 
 /* ---------- Card a tutta altezza, stesso spazio sopra e sotto ---------- */
 :root { --gap: 9vh; }
-body { padding-top: 26px !important; padding-bottom: 0 !important; }
+body { padding-top: 56px !important; padding-bottom: 0 !important; }
 header { margin-bottom: 0 !important; }
 #todayCard { display: flex; flex-direction: column; margin-top: var(--gap); position: relative; }
 .focus { margin-top: 0 !important; display: flex; flex-direction: column; min-height: 220px; box-sizing: border-box; }
