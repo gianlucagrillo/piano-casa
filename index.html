@@ -340,7 +340,31 @@ body { background: radial-gradient(120% 80% at 20% 0%, var(--g-800) 0%, var(--g-
   padding: 24px 18px 18px;
   box-shadow: 0 18px 40px rgba(0,0,0,.35);
 }
-.focus.has-photo .focus-btn { border-radius: 12px; }</style>
+.focus.has-photo .focus-btn { border-radius: 12px; }
+/* ---------- Tieni premuto per completare ---------- */
+.focus { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+.focus.pressing { transform: scale(.985); transition: transform .3s ease; }
+.focus-hold {
+  margin-top: 0; align-self: stretch; text-align: center; padding: 14px 16px; border-radius: 12px;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); color: #fff;
+  font-weight: 600; font-size: .95rem; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.hold-ov {
+  position: fixed; inset: 0; z-index: 90; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 40%, #2fb394 0%, var(--g-300) 45%, var(--g-400) 100%);
+  --cy: 42vh;
+}
+.hold-ov.shrink { transition: clip-path .5s cubic-bezier(.6,0,.2,1); }
+.hold-ov.fade { transition: opacity .3s ease; opacity: 0; }
+.hold-check { position: absolute; left: 50%; top: var(--cy); width: 150px; height: 150px; transform: translate(-50%, -50%); transition: width .5s cubic-bezier(.6,0,.2,1), height .5s cubic-bezier(.6,0,.2,1); }
+.hold-check path { fill: none; stroke: #fff; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; }
+.hold-ov.drawn .hold-check path { transition: stroke-dashoffset .35s ease-out; stroke-dashoffset: 0; }
+.hold-ov.shrink .hold-check { width: 84px; height: 84px; }
+.hold-praise { position: absolute; left: 0; right: 0; top: calc(var(--cy) + 76px); text-align: center; font-size: 1.6rem; font-weight: 700; color: #fff; opacity: 0; transform: translateY(10px); transition: opacity .35s ease, transform .35s ease; }
+.hold-ov.show-praise { clip-path: none !important; background: transparent; }
+.hold-ov.show-praise::before { content: ""; position: absolute; left: 50%; top: var(--cy); width: 112px; height: 112px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #2fb394, var(--g-400)); box-shadow: 0 0 0 0 rgba(159,217,200,.5); animation: ring .7s ease-out; }
+.hold-ov.show-praise .hold-praise { opacity: 1; transform: none; text-shadow: 0 2px 12px rgba(0,0,0,.4); }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(159,217,200,.55); } 100% { box-shadow: 0 0 0 40px rgba(159,217,200,0); } }</style>
 </head>
 <body>
 <div class="wrap">
@@ -824,11 +848,11 @@ function renderFocus(animate) {
       });
       card.appendChild(chips);
     }
-    const btn = document.createElement("button");
-    btn.className = "focus-btn";
-    btn.textContent = "Fatto";
-    btn.addEventListener("click", () => completeFocus(next, card));
-    card.appendChild(btn);
+    const hint = document.createElement("div");
+    hint.className = "focus-hold";
+    hint.textContent = "Tieni premuto per completare";
+    card.appendChild(hint);
+    attachHold(card, next);
   }
   host.appendChild(card);
   requestAnimationFrame(fitCard);
@@ -847,40 +871,82 @@ function renderFocus(animate) {
   host.appendChild(undo);
 }
 
-function completeFocus(item, card) {
-  if (card.dataset.busy) return;
-  card.dataset.busy = "1";
+/* ---------- Tieni premuto: lo schermo si riempie di verde, poi spunta e coriandoli ---------- */
+
+const HOLD_MS = 700;
+
+function attachHold(card, item) {
+  let ov = null, raf = 0, t0 = 0, x = 0, y = 0, done = false;
+  const R = () => Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  card.addEventListener("contextmenu", e => e.preventDefault());
+  card.addEventListener("pointerdown", e => {
+    if (done || ov) return;
+    x = e.clientX; y = e.clientY;
+    try { card.setPointerCapture(e.pointerId); } catch (_) {}
+    ov = document.createElement("div");
+    ov.className = "hold-ov";
+    ov.innerHTML = '<svg class="hold-check" viewBox="0 0 52 52"><path d="M14 27.5 L22.5 36 L38.5 18"/></svg><div class="hold-praise"></div>';
+    ov.style.clipPath = "circle(0px at " + x + "px " + y + "px)";
+    document.body.appendChild(ov);
+    card.classList.add("pressing");
+    if (navigator.vibrate) navigator.vibrate(8);
+    t0 = performance.now();
+    const tick = now => {
+      const p = Math.min(1, (now - t0) / HOLD_MS);
+      const e2 = p * p * (3 - 2 * p);
+      ov.style.clipPath = "circle(" + Math.max(1, e2 * R()) + "px at " + x + "px " + y + "px)";
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else { done = true; finishHold(ov, item, card); }
+    };
+    raf = requestAnimationFrame(tick);
+  });
+  const cancel = () => {
+    if (done || !ov) return;
+    cancelAnimationFrame(raf);
+    card.classList.remove("pressing");
+    const o = ov; ov = null;
+    o.style.transition = "clip-path .25s ease";
+    o.style.clipPath = "circle(0px at " + x + "px " + y + "px)";
+    setTimeout(() => o.remove(), 270);
+  };
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => card.addEventListener(ev, cancel));
+}
+
+function finishHold(ov, item, card) {
   const items = [];
   todayBlocks().forEach(b => b.items.forEach(it => items.push(Object.assign({ block: b }, it))));
   const remaining = items.filter(it => !get(it.scope, it.id) && it.id !== item.id);
   const dayDone = remaining.length === 0;
   const blockDone = !remaining.some(it => it.block.key === item.block.key);
-  const doneCount = items.length - remaining.length;
 
-  // 1) Feedback immediato: pulsante che diventa una spunta, vibrazione, suono, barra che avanza.
-  const btn = card.querySelector(".focus-btn");
-  if (btn) { btn.classList.add("ok"); btn.textContent = "✓"; }
-  card.classList.add("win");
-  const bar = card.querySelector(".focus-progress i");
-  if (bar) bar.style.width = (doneCount / items.length * 100) + "%";
-  if (navigator.vibrate) navigator.vibrate(dayDone ? [20, 60, 20, 60, 40] : blockDone ? [15, 50, 25] : 18);
+  ov.style.clipPath = "none";
+  ov.classList.add("drawn");
+  if (navigator.vibrate) navigator.vibrate(dayDone ? [20, 60, 20, 60, 40] : blockDone ? [15, 50, 25] : [12, 40, 22]);
   chime(dayDone ? 3 : blockDone ? 2 : 1);
-  const praise = document.createElement("div");
-  praise.className = "focus-praise";
-  praise.textContent = dayDone ? "Giornata chiusa!" : blockDone ? pick(PRAISE_BLOCK) : pick(PRAISE);
-  card.appendChild(praise);
-  if (dayDone) confetti();
 
-  // 2) Poi la card scorre via e arriva la prossima.
-  setTimeout(() => card.classList.add("leave"), dayDone ? 900 : 520);
+  // Il verde si raccoglie in un cerchio con la spunta, poi esplodono i coriandoli.
   setTimeout(() => {
+    const cx = innerWidth / 2, cy = innerHeight * 0.42;
+    ov.style.setProperty("--cy", cy + "px");
+    ov.style.clipPath = "circle(150% at " + cx + "px " + cy + "px)";
+    requestAnimationFrame(() => {
+      ov.classList.add("shrink");
+      ov.style.clipPath = "circle(56px at " + cx + "px " + cy + "px)";
+    });
+    ov.querySelector(".hold-praise").textContent = dayDone ? "Giornata chiusa!" : blockDone ? pick(PRAISE_BLOCK) : pick(PRAISE);
+    setTimeout(() => { ov.classList.add("show-praise"); confetti(cx, cy, dayDone ? 160 : 70); }, 300);
+  }, 420);
+
+  setTimeout(() => ov.classList.add("fade"), dayDone ? 1900 : 1450);
+  setTimeout(() => {
+    ov.remove();
     state[item.scope][item.id] = true;
     state.updatedAt = Date.now(); save(); schedulePush();
     lastDone = { scope: item.scope, id: item.id };
     clearTimeout(undoTimer);
     undoTimer = setTimeout(() => { lastDone = null; const u = document.querySelector(".focus-undo"); if (u) u.hidden = true; }, 6000);
     renderFocus(true); renderWeek(); renderStats();
-  }, dayDone ? 1120 : 740);
+  }, dayDone ? 2200 : 1700);
 }
 
 /* ---------- Ricompense: frasi, suono, coriandoli ---------- */
@@ -925,7 +991,7 @@ function chime(level) {
   } catch (e) {}
 }
 
-function confetti() {
+function confetti(ox, oy, n) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const cv = document.createElement("canvas");
   cv.className = "confetti";
@@ -934,8 +1000,8 @@ function confetti() {
   document.body.appendChild(cv);
   const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
   const colors = ["#9fd9c8", "#1a8a78", "#146c60", "#e9f3ef", "#d9c58f", "#01574b"];
-  const parts = Array.from({ length: 140 }, () => ({
-    x: innerWidth / 2, y: innerHeight * 0.45,
+  const parts = Array.from({ length: n || 140 }, () => ({
+    x: ox != null ? ox : innerWidth / 2, y: oy != null ? oy : innerHeight * 0.45,
     vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
     r: Math.random() * 6 + 4, c: colors[Math.floor(Math.random() * colors.length)],
     a: Math.random() * Math.PI, va: (Math.random() - 0.5) * 0.4
