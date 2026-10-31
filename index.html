@@ -2,12 +2,13 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Piano Casa</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#b11f4b">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Piano Casa">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b11f4b'/%3E%3Cpath d='M16 4.8 2.8 15.6h3.4v11.6h19.6V15.6h3.4z' fill='%23ffffff'/%3E%3Crect x='13.2' y='19.4' width='5.6' height='7.8' rx='1.2' fill='%23b11f4b'/%3E%3C/svg%3E">
@@ -80,7 +81,7 @@ body {
   background: var(--cp-bg);
   color: var(--cp-text);
   line-height: 1.5;
-  padding: 32px 20px 80px;
+  padding: max(32px, calc(env(safe-area-inset-top) + 16px)) 20px max(80px, calc(env(safe-area-inset-bottom) + 24px));
   -webkit-font-smoothing: antialiased;
 }
 .wrap { max-width: 760px; margin: 0 auto; }
