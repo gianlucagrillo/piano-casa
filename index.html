@@ -93,7 +93,7 @@ header { margin-bottom: 22px; }
 h1 { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
 .date-chip {
   font-size: 0.85rem; font-weight: 600; color: var(--cp-text-muted);
-  margin-left: auto; margin-right: 10px; white-space: nowrap;
+  margin-left: auto; margin-right: 32px; white-space: nowrap;
 }
 .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .stat {
@@ -699,17 +699,36 @@ function render() {
 
 let lastDone = null, undoTimer = null;
 
+// Da che ora compare ogni gruppo. Mattina subito; faccende di casa la sera nei giorni
+// lavorativi, dalla tarda mattinata nel weekend; raccolta, barba serale e sera dalle 18.
+const EVENING_HOUR = 18;
+function blockStartHour(key) {
+  const wd = new Date().getDay();
+  const weekend = wd === 0 || wd === 6;
+  if (key === "mattina" || key === "barba-am") return 0;
+  if (key === "day" || key === "bi" || key === "mo") return weekend ? 10 : EVENING_HOUR;
+  return EVENING_HOUR;
+}
+function hourLabel(h) { return String(h).padStart(2, "0") + ":00"; }
+
 function renderFocus(animate) {
   const host = document.getElementById("todayCard");
   const items = [];
   todayBlocks().forEach(b => b.items.forEach(it => items.push(Object.assign({ block: b }, it))));
   const total = items.length;
-  const next = items.find(it => !get(it.scope, it.id));
+  const hourNow = new Date().getHours();
+  const pending = items.filter(it => !get(it.scope, it.id));
+  const next = pending.find(it => blockStartHour(it.block.key) <= hourNow);
   host.innerHTML = "";
 
   const card = document.createElement("div");
   card.className = "focus" + (animate ? " enter" : "");
-  if (!next) {
+  if (!next && pending.length) {
+    const at = Math.min(...pending.map(it => blockStartHour(it.block.key)));
+    card.classList.add("focus-done-all");
+    card.innerHTML = '<div class="focus-check">☕</div><div class="focus-text">Per ora niente da fare</div><div class="focus-ctx"></div>';
+    card.querySelector(".focus-ctx").textContent = "Le prossime cose compaiono alle " + hourLabel(at) + ".";
+  } else if (!next) {
     card.classList.add("focus-done-all");
     card.innerHTML = '<div class="focus-check">✓</div><div class="focus-text">Giornata chiusa</div><div class="focus-ctx">Niente altro da fare oggi.</div>';
   } else {
@@ -915,6 +934,12 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
   };
   document.addEventListener("pointerdown", go, true);
 })();
+// Se l'app resta aperta, al cambio d'ora compaiono le nuove task.
+let shownHour = new Date().getHours();
+setInterval(() => {
+  const h = new Date().getHours();
+  if (h !== shownHour) { shownHour = h; const fresh = load(); if (fresh.day !== state.day) state = fresh; render(); }
+}, 30000);
 boot();
 
 // Se la pagina resta aperta oltre la mezzanotte, ricarica lo stato al ritorno.
