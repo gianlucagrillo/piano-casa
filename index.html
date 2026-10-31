@@ -385,7 +385,7 @@ body { overflow: visible !important; }
 .focus.has-photo > :last-of-type { margin-bottom: 6px; }
 /* ---------- Il verde si ritira mostrando la card successiva ---------- */
 .hold-ov .hold-check { left: var(--cx, 50%); }
-.hold-ov.reveal { transition: clip-path .55s cubic-bezier(.55,0,.35,1); }
+.hold-ov.reveal { clip-path: none !important; }
 .hold-ov.reveal .hold-check { transition: transform .4s ease, opacity .35s ease; transform: translate(-50%, -50%) scale(.35); opacity: 0; }</style>
 </head>
 <body>
@@ -1046,13 +1046,19 @@ function finishHold(ov, item, card, x, y) {
     undoTimer = setTimeout(() => { lastDone = null; const u = document.querySelector(".focus-undo"); if (u) u.hidden = true; }, 6000);
     renderFocus(false); renderWeek(); renderStats();
 
-    const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-    ov.style.clipPath = "circle(" + R + "px at " + x + "px " + y + "px)";
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      ov.classList.add("reveal");
-      ov.style.clipPath = "circle(0px at " + x + "px " + y + "px)";
-    }));
-    setTimeout(() => ov.remove(), 700);
+    // Nel verde si apre un buco che si allarga dal punto del dito e scopre la card successiva.
+    const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 2;
+    ov.classList.add("reveal");
+    const t1 = performance.now(), DUR = 560;
+    const step = now => {
+      const p = Math.min(1, (now - t1) / DUR);
+      const e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      const r = e * R;
+      const m = "radial-gradient(circle at " + x + "px " + y + "px, transparent " + r + "px, #000 " + (r + 1) + "px)";
+      ov.style.webkitMaskImage = m; ov.style.maskImage = m;
+      if (p < 1) requestAnimationFrame(step); else ov.remove();
+    };
+    requestAnimationFrame(step);
   }, dayDone ? 650 : 480);
 }
 /* ---------- Ricompense: frasi, suono, coriandoli ---------- */
@@ -1328,7 +1334,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031152500";
+const APP_BUILD = "20261031153500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
