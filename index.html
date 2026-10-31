@@ -1256,7 +1256,7 @@ async function boot() {
 }
 
 if ("serviceWorker" in navigator && location.protocol === "https:") {
-  navigator.serviceWorker.register("service-worker.js").catch(() => {});
+  navigator.serviceWorker.register("service-worker.js", { updateViaCache: "none" }).then(r => r.update()).catch(() => {});
 }
 
 // Schermo intero: nell'app installata, al primo tocco nasconde anche le barre di sistema.
@@ -1314,7 +1314,18 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
   row.addEventListener("contextmenu", e => e.preventDefault());
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
+// Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
+const APP_BUILD = "20261031150000";
+async function checkNewVersion() {
+  try {
+    const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
+    const m = t.match(/const APP_BUILD = "([^"]+)"/);
+    if (m && m[1] !== APP_BUILD) location.reload();
+  } catch (e) {}
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 window.onAppResume = function () {
+  checkNewVersion();
   const fresh = load();
   if (fresh.day !== state.day || fresh.week !== state.week) { state = fresh; save(); }
   render(); pullState();
