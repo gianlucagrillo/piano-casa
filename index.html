@@ -505,7 +505,7 @@ html.cards-v2 .focus.has-photo .focus-text { margin-top: 18px !important; }
 <script>
 /* ============ DATI (letti da GitHub) ============ */
 
-let ROUTINE, WEEK, MONTHLY, BIWEEKLY, WASTE, BEARD, SKIN, CARDS = {};
+let ROUTINE, WEEK, MONTHLY, BIWEEKLY, WASTE, BEARD, SKIN, DINNER = {}, CARDS = {};
 // Titolo essenziale, sottotitolo e descrizione della card (dal piano); se manca, il testo della task.
 function cardInfo(it) {
   if (it.block.chips) {
@@ -526,7 +526,7 @@ function eveningRoutine(minox, roller, retinol) {
 }
 function parseDay(s) { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
 function applyPlan(p) {
-  ROUTINE = p.ROUTINE; WEEK = p.WEEK; MONTHLY = p.MONTHLY; BIWEEKLY = p.BIWEEKLY; WASTE = p.WASTE; CARDS = p.CARDS || {};
+  ROUTINE = p.ROUTINE; WEEK = p.WEEK; DINNER = p.DINNER || {}; MONTHLY = p.MONTHLY; BIWEEKLY = p.BIWEEKLY; WASTE = p.WASTE; CARDS = p.CARDS || {};
   BEARD = Object.assign({}, p.BEARD, { start: parseDay(p.BEARD.start), rollerStart: parseDay(p.BEARD.rollerStart) });
   SKIN = Object.assign({}, p.SKIN, { retinolStart: parseDay(p.SKIN.retinolStart), retinolDaily: parseDay(p.SKIN.retinolDaily) });
 }
@@ -653,10 +653,20 @@ function todayBlocks() {
   const pm = eveningRoutine(beardOn && !rollerTonight, rollerTonight, retinol);
   const pmItems = [{ scope: "daily", id: "routine:pm", text: "Evening routine", card: pm }];
   if (beardOn && day.monthly && currentBlock().n === 1) pmItems.push({ scope: "daily", id: "barba:photo", text: BEARD.photo });
+  if (prepTomorrow()) {
+    blocks.push({
+      key: "sera", title: ROUTINE.sera.title, time: ROUTINE.sera.timeWithPrep - ROUTINE.sera.timeWithoutPrep,
+      items: ROUTINE.sera.prep.map((t, i) => ({ scope: "daily", id: "sera:p" + i, text: t }))
+    });
+  }
+
+  const dn = DINNER[id];
+  const dinItems = [];
+  if (dn) dinItems.push({ scope: "daily", id: "cena:cook", text: "Cook dinner", card: { t: dn.t, m: dn.m, steps: dn.ing } });
+  ROUTINE.sera.base.forEach((t, i) => dinItems.push({ scope: "daily", id: "sera:" + i, text: t }));
   blocks.push({
-    key: "sera", title: ROUTINE.sera.title, time: eveningTime(),
-    note: prepTomorrow() ? null : "Domani non lavori: niente pranzo da preparare.",
-    items: eveningTasks().map((t, i) => ({ scope: "daily", id: "sera:" + i, text: t }))
+    key: "cena", title: "🍽️ Cena", time: (dn ? dn.m : 0) + ROUTINE.sera.timeWithoutPrep,
+    items: dinItems
   });
 
   blocks.push({
@@ -888,6 +898,7 @@ function blockStartHour(key) {
   if (key === "day" && (WEEK.find(d => d.id === DAY_IDS[wd]) || {}).evening) return EVENING_HOUR;
   if (key === "day" || key === "bi" || key === "mo") return weekend ? 10 : EVENING_HOUR;
   if (key === "barba") return 22;
+  if (key === "cena") return 20;
   return EVENING_HOUR;
 }
 function hourLabel(h) { return String(h).padStart(2, "0") + ":00"; }
@@ -906,7 +917,8 @@ function freqFor(it) {
   if (k === "mattina") return "Every morning";
   if (k === "barba-am") return "Every morning";
   if (k === "barba") return t === BEARD.photo ? "Every 4 weeks" : "Every evening";
-  if (k === "sera") return ROUTINE.sera.prep.includes(t) ? "Before workdays" : "Every evening";
+  if (k === "sera") return "Before workdays";
+  if (k === "cena") return t === "Cook dinner" ? "Every " + DAY_EN[DAY_IDS[new Date().getDay()]] : "Every evening";
   if (k === "mo") return "Every 4 weeks";
   if (k === "bi") return "Every 2 weeks";
   if (k === "waste") { const ds = Object.keys(WASTE).filter(d => WASTE[d].join() === it.block.chips.join()); return ds.length === 1 ? "Every " + DAY_EN[ds[0]] : ds.map(d => DAY_SHORT[d]).join(" and "); }
@@ -1167,7 +1179,7 @@ function finishHold(ov, item, card, x, y) {
 
 // Foto di sfondo della card (Unsplash), scelte in base al testo della task.
 const PHOTOS = [
-  [/fai la barba/i, "rasatura-2"], [/^morning routine$/i, "routine-am"], [/^evening routine$/i, "routine-pm"],
+  [/fai la barba/i, "rasatura-2"], [/^cook dinner$/i, "cena"], [/^morning routine$/i, "routine-am"], [/^evening routine$/i, "routine-pm"],
   [/ciotole gatti: acqua/i, "gatti-ciotole"], [/rifai il letto/i, "letto"], [/minoxidil|dermaroller|barba/i, "barba-3"],
   [/piatti/i, "piatti-4"], [/giro di 3 minuti/i, "riordino"], [/pranzo/i, "pranzo"], [/colazione/i, "colazione"],
   [/wc e lavandino/i, "wc-lavandino"], [/specchio e rubinetteria/i, "specchio"], [/spazzola i gatti/i, "gatti-spazzola"],
@@ -1437,7 +1449,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261101235700";
+const APP_BUILD = "20261102001500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
