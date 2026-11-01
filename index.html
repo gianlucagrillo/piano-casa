@@ -894,7 +894,7 @@ const EVENING_HOUR = 18;
 function blockStartHour(key) {
   const wd = new Date().getDay();
   const weekend = wd === 0 || wd === 6;
-  if (key === "mattina" || key === "barba-am") return 0;
+  if (key === "mattina" || key === "barba-am") return 7;
   if (key === "day" && (WEEK.find(d => d.id === DAY_IDS[wd]) || {}).evening) return EVENING_HOUR;
   if (key === "day" || key === "bi" || key === "mo") return weekend ? 10 : EVENING_HOUR;
   if (key === "barba") return 22;
@@ -1449,7 +1449,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261102001500";
+const APP_BUILD = "20261102001000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
