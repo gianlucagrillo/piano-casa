@@ -518,13 +518,11 @@ function cardInfo(it) {
 }
 function morningRoutine(minox) {
   const steps = [SKIN.teeth].concat(minox ? SKIN.minoxidil : [], [SKIN.cicaAm, SKIN.spf]);
-  return { t: "Morning routine", s: minox ? "Teeth, minoxidil, cream and sunscreen" : "Teeth, cream and sunscreen", m: minox ? 5 : 4, steps };
+  return { t: "Morning routine", m: minox ? 5 : 4, steps };
 }
 function eveningRoutine(minox, roller, retinol) {
   const steps = [SKIN.teeth].concat(roller ? SKIN.roller : [], minox ? SKIN.minoxidil : [], retinol ? [SKIN.retinol] : [], [SKIN.cicaPm]);
-  const parts = ["Teeth"].concat(roller ? ["dermaroller"] : [], minox ? ["minoxidil"] : [], retinol ? ["retinol"] : [], ["cream"]);
-  const s = parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1];
-  return { t: "Evening routine", s, m: roller ? 8 : retinol ? 6 : 5, steps };
+  return { t: "Evening routine", m: roller ? 8 : retinol ? 6 : 5, steps };
 }
 function parseDay(s) { const p = s.split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
 function applyPlan(p) {
@@ -1439,7 +1437,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261101235300";
+const APP_BUILD = "20261101235700";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
