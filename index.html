@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Piano Casa</title>
+<title>Rhythm</title>
 <meta name="theme-color" content="#f7f4ef">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Piano Casa">
+<meta name="apple-mobile-web-app-title" content="Rhythm">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b11f4b'/%3E%3Cpath d='M16 4.8 2.8 15.6h3.4v11.6h19.6V15.6h3.4z' fill='%23ffffff'/%3E%3Crect x='13.2' y='19.4' width='5.6' height='7.8' rx='1.2' fill='%23b11f4b'/%3E%3C/svg%3E">
 <script>
   (() => {
@@ -1438,7 +1438,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261031190800";
+const APP_BUILD = "20261101234800";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
