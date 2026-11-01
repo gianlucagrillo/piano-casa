@@ -602,7 +602,7 @@ function todayBlocks() {
 
   blocks.push({
     key: "mattina", title: ROUTINE.mattina.title, time: ROUTINE.mattina.time,
-    items: ROUTINE.mattina.tasks.map((t, i) => ({ scope: "daily", id: "mattina:" + i, text: t }))
+    items: ROUTINE.mattina.tasks.map((t, i) => ({ scope: "daily", id: "mattina:" + i, text: t })).filter(it => !(day.skipMorning || []).includes(it.text))
   });
 
   const nowAm = new Date();
@@ -887,6 +887,7 @@ function blockStartHour(key) {
   const wd = new Date().getDay();
   const weekend = wd === 0 || wd === 6;
   if (key === "mattina" || key === "barba-am") return 0;
+  if (key === "day" && (WEEK.find(d => d.id === DAY_IDS[wd]) || {}).evening) return EVENING_HOUR;
   if (key === "day" || key === "bi" || key === "mo") return weekend ? 10 : EVENING_HOUR;
   if (key === "barba") return 22;
   return EVENING_HOUR;
@@ -1438,7 +1439,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261101234800";
+const APP_BUILD = "20261101235300";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
