@@ -660,12 +660,12 @@ function todayBlocks() {
   const pmItems = [{ scope: "daily", id: "routine:pm", text: "Evening routine", card: pm }];
   if (beardOn && day.monthly && currentBlock().n === 1) pmItems.push({ scope: "daily", id: "barba:photo", text: BEARD.photo });
   const gym = ROUTINE.sera.gym && ROUTINE.sera.gym.days.includes(id) ? ROUTINE.sera.gym.text : null;
-  const seraItems = (prepTomorrow() ? ROUTINE.sera.prep.map((t, i) => ({ scope: "daily", id: "sera:p" + i, text: t })) : [])
-    .concat(gym ? [{ scope: "daily", id: "sera:gym", text: gym }] : []);
+  const prepItems = prepTomorrow() ? ROUTINE.sera.prep.map((t, i) => ({ scope: "daily", id: "sera:p" + i, text: t })) : [];
+  const seraItems = gym ? [{ scope: "daily", id: "sera:gym", text: gym }] : [];
   if (seraItems.length) {
     blocks.push({
       key: "sera", title: ROUTINE.sera.title,
-      time: (prepTomorrow() ? ROUTINE.sera.timeWithPrep - ROUTINE.sera.timeWithoutPrep : 0) + (gym ? 3 : 0),
+      time: 3,
       items: seraItems
     });
   }
@@ -673,9 +673,10 @@ function todayBlocks() {
   const dn = DINNER[id];
   const dinItems = [];
   if (dn) dinItems.push({ scope: "daily", id: "cena:cook", text: "Cook dinner", card: { t: dn.t, m: dn.m, steps: dn.ing } });
+  prepItems.forEach(it => dinItems.push(it));
   ROUTINE.sera.base.forEach((t, i) => dinItems.push({ scope: "daily", id: "sera:" + i, text: t }));
   blocks.push({
-    key: "cena", title: "🍽️ Cena", time: (dn ? dn.m : 0) + ROUTINE.sera.timeWithoutPrep,
+    key: "cena", title: "🍽️ Cena", time: (dn ? dn.m : 0) + (prepItems.length ? ROUTINE.sera.timeWithPrep : ROUTINE.sera.timeWithoutPrep),
     items: dinItems
   });
 
@@ -929,7 +930,7 @@ function freqFor(it) {
   if (k === "barba-am") return "Every morning";
   if (k === "barba") return t === BEARD.photo ? "Every 4 weeks" : "Every evening";
   if (k === "sera") return ROUTINE.sera.gym && t === ROUTINE.sera.gym.text ? ROUTINE.sera.gym.days.length + " times a week" : "Before workdays";
-  if (k === "cena") return t === "Cook dinner" ? "Every " + DAY_EN[DAY_IDS[new Date().getDay()]] : "Every evening";
+  if (k === "cena") return t === "Cook dinner" ? "Every " + DAY_EN[DAY_IDS[new Date().getDay()]] : ROUTINE.sera.prep.includes(t) ? "Before workdays" : "Every evening";
   if (k === "mo") return "Every 4 weeks";
   if (k === "bi") return "Every 2 weeks";
   if (k === "waste") { const ds = Object.keys(WASTE).filter(d => WASTE[d].join() === it.block.chips.join()); return ds.length === 1 ? "Every " + DAY_EN[ds[0]] : ds.map(d => DAY_SHORT[d]).join(" and "); }
@@ -1460,7 +1461,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261102185600";
+const APP_BUILD = "20261102190000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
