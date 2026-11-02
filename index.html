@@ -659,13 +659,13 @@ function todayBlocks() {
   const pm = eveningRoutine(beardOn && !rollerTonight, rollerTonight, retinol);
   const pmItems = [{ scope: "daily", id: "routine:pm", text: "Evening routine", card: pm }];
   if (beardOn && day.monthly && currentBlock().n === 1) pmItems.push({ scope: "daily", id: "barba:photo", text: BEARD.photo });
-  const gym = ROUTINE.sera.gym && ROUTINE.sera.gym.days.includes(id) ? ROUTINE.sera.gym.text : null;
+  const extras = (ROUTINE.sera.extras || []).filter(x => x.days.includes(id));
   const prepItems = prepTomorrow() ? ROUTINE.sera.prep.map((t, i) => ({ scope: "daily", id: "sera:p" + i, text: t })) : [];
-  const seraItems = gym ? [{ scope: "daily", id: "sera:gym", text: gym }] : [];
+  const seraItems = extras.map(x => ({ scope: "daily", id: "sera:" + x.id, text: x.text }));
   if (seraItems.length) {
     blocks.push({
       key: "sera", title: ROUTINE.sera.title,
-      time: 3,
+      time: extras.reduce((a, x) => a + x.m, 0),
       items: seraItems
     });
   }
@@ -929,7 +929,12 @@ function freqFor(it) {
   if (k === "frigo") return "Monday to Friday";
   if (k === "barba-am") return "Every morning";
   if (k === "barba") return t === BEARD.photo ? "Every 4 weeks" : "Every evening";
-  if (k === "sera") return ROUTINE.sera.gym && t === ROUTINE.sera.gym.text ? ROUTINE.sera.gym.days.length + " times a week" : "Before workdays";
+  if (k === "sera") {
+    const x = (ROUTINE.sera.extras || []).find(e => e.text === t);
+    if (!x) return "Before workdays";
+    if (x.days.join() === "lun,mar,mer,gio,ven") return "Monday to Friday";
+    return x.days.length + " times a week";
+  }
   if (k === "cena") return t === "Cook dinner" ? "Every " + DAY_EN[DAY_IDS[new Date().getDay()]] : ROUTINE.sera.prep.includes(t) ? "Before workdays" : "Every evening";
   if (k === "mo") return "Every 4 weeks";
   if (k === "bi") return "Every 2 weeks";
@@ -1191,7 +1196,7 @@ function finishHold(ov, item, card, x, y) {
 
 // Foto di sfondo della card (Unsplash), scelte in base al testo della task.
 const PHOTOS = [
-  [/fai la barba/i, "rasatura-2"], [/^cook dinner$/i, "cena"], [/dal frigo/i, "frigo-3"], [/borsa della palestra/i, "palestra"], [/^morning routine$/i, "routine-am"], [/^evening routine$/i, "routine-pm"],
+  [/fai la barba/i, "rasatura-2"], [/^cook dinner$/i, "cena"], [/dal frigo/i, "frigo-3"], [/borsa della palestra/i, "palestra"], [/esercizi vocali/i, "voce"], [/^morning routine$/i, "routine-am"], [/^evening routine$/i, "routine-pm"],
   [/ciotole gatti: acqua/i, "gatti-ciotole"], [/rifai il letto/i, "letto"], [/minoxidil|dermaroller|barba/i, "barba-3"],
   [/piatti/i, "piatti-4"], [/giro di 3 minuti/i, "riordino"], [/pranzo/i, "pranzo"], [/colazione/i, "colazione"],
   [/wc e lavandino/i, "wc-lavandino"], [/specchio e rubinetteria/i, "specchio"], [/spazzola i gatti/i, "gatti-spazzola"],
@@ -1461,7 +1466,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261102190000";
+const APP_BUILD = "20261102191500";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
