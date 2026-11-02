@@ -928,7 +928,7 @@ function freqFor(it) {
   if (k === "frigo") return "Monday to Friday";
   if (k === "barba-am") return "Every morning";
   if (k === "barba") return t === BEARD.photo ? "Every 4 weeks" : "Every evening";
-  if (k === "sera") return ROUTINE.sera.gym && t === ROUTINE.sera.gym.text ? "Sunday to Friday" : "Before workdays";
+  if (k === "sera") return ROUTINE.sera.gym && t === ROUTINE.sera.gym.text ? ROUTINE.sera.gym.days.length + " times a week" : "Before workdays";
   if (k === "cena") return t === "Cook dinner" ? "Every " + DAY_EN[DAY_IDS[new Date().getDay()]] : "Every evening";
   if (k === "mo") return "Every 4 weeks";
   if (k === "bi") return "Every 2 weeks";
@@ -1460,7 +1460,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261102185500";
+const APP_BUILD = "20261102185600";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
