@@ -601,7 +601,6 @@ function todayBlocks() {
   blocks.push({
     key: "mattina", title: ROUTINE.mattina.title, time: ROUTINE.mattina.time,
     items: ROUTINE.mattina.tasks.map((t, i) => ({ scope: "daily", id: "mattina:" + i, text: t })).filter(it => !(day.skipMorning || []).includes(it.text))
-      .concat(new Date().getDay() >= 1 && new Date().getDay() <= 5 ? (ROUTINE.mattina.workday || []).map((t, i) => ({ scope: "daily", id: "mattina:w" + i, text: t })) : [])
   });
 
   const nowAm = new Date();
@@ -614,6 +613,12 @@ function todayBlocks() {
     key: "barba-am", title: "🪥 Routine", time: am.m,
     items: [{ scope: "daily", id: "routine:am", text: "Morning routine", card: am }]
   });
+  if (nowAm.getDay() >= 1 && nowAm.getDay() <= 5 && (ROUTINE.mattina.workday || []).length) {
+    blocks.push({
+      key: "frigo", title: ROUTINE.mattina.title, time: 1,
+      items: ROUTINE.mattina.workday.map((t, i) => ({ scope: "daily", id: "mattina:w" + i, text: t }))
+    });
+  }
 
   if (day.tasks.length) {
     blocks.push({
@@ -895,7 +900,7 @@ const EVENING_HOUR = 18;
 function blockStartHour(key) {
   const wd = new Date().getDay();
   const weekend = wd === 0 || wd === 6;
-  if (key === "mattina" || key === "barba-am") return 7;
+  if (key === "mattina" || key === "barba-am" || key === "frigo") return 7;
   if (key === "day" && (WEEK.find(d => d.id === DAY_IDS[wd]) || {}).evening) return EVENING_HOUR;
   if (key === "day" || key === "bi" || key === "mo") return weekend ? 10 : EVENING_HOUR;
   if (key === "barba") return 22;
@@ -915,7 +920,8 @@ const DAY_EN = { lun: "Monday", mar: "Tuesday", mer: "Wednesday", gio: "Thursday
 const DAY_SHORT = { lun: "Mon", mar: "Tue", mer: "Wed", gio: "Thu", ven: "Fri", sab: "Sat", dom: "Sun" };
 function freqFor(it) {
   const k = it.block.key, t = it.text;
-  if (k === "mattina") return (ROUTINE.mattina.workday || []).includes(t) ? "Monday to Friday" : "Every morning";
+  if (k === "mattina") return "Every morning";
+  if (k === "frigo") return "Monday to Friday";
   if (k === "barba-am") return "Every morning";
   if (k === "barba") return t === BEARD.photo ? "Every 4 weeks" : "Every evening";
   if (k === "sera") return "Before workdays";
@@ -1450,7 +1456,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261102071200";
+const APP_BUILD = "20261102083200";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
