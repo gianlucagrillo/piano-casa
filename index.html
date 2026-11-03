@@ -654,14 +654,6 @@ function todayBlocks() {
     });
   }
 
-  const bins = WASTE[id];
-  if (bins) {
-    blocks.push({
-      key: "waste", title: "♻️ Raccolta", time: 2, chips: bins,
-      items: [{ scope: "weekly", id: "waste:" + id, text: "Portata fuori" }]
-    });
-  }
-
   const rollerTonight = beardOn && id === BEARD.rollerDay && todayD >= BEARD.rollerStart;
   const sinceRetinol = Math.round((todayD - SKIN.retinolStart) / 86400000);
   const retinol = sinceRetinol >= 0 && !rollerTonight && !afterRoller && (todayD >= SKIN.retinolDaily || sinceRetinol % 2 === 0);
@@ -689,6 +681,14 @@ function todayBlocks() {
     key: "cena", title: "🍽️ Cena", time: (dn ? dn.m : 0) + (prepItems.length ? ROUTINE.sera.timeWithPrep : ROUTINE.sera.timeWithoutPrep),
     items: dinItems
   });
+
+  const bins = WASTE[id];
+  if (bins) {
+    blocks.push({
+      key: "waste", title: "♻️ Raccolta", time: 2, chips: bins,
+      items: [{ scope: "weekly", id: "waste:" + id, text: "Portata fuori" }]
+    });
+  }
 
   blocks.push({
     key: "barba", title: "🪥 Routine", time: pm.m,
@@ -919,7 +919,7 @@ function blockStartHour(key) {
   if (key === "day" && (WEEK.find(d => d.id === DAY_IDS[wd]) || {}).evening) return EVENING_HOUR;
   if (key === "day" || key === "bi" || key === "mo") return weekend ? 10 : EVENING_HOUR;
   if (key === "barba") return 22;
-  if (key === "cena") return 20;
+  if (key === "cena" || key === "waste") return 20;
   return EVENING_HOUR;
 }
 function hourLabel(h) { return String(h).padStart(2, "0") + ":00"; }
@@ -1476,7 +1476,7 @@ document.addEventListener("fullscreenchange", () => setTimeout(fitCard, 120));
 })();
 // Chiamata dall'app Android quando torni nell'app: aggiorna spunte e piano.
 // Se è uscita una versione nuova della pagina, ricarica da sola quando torni nell'app.
-const APP_BUILD = "20261102202500";
+const APP_BUILD = "20261103181000";
 async function checkNewVersion() {
   try {
     const t = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
